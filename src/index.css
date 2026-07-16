@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { background: #F6F5FB; }
+  body {
+    margin: 0;
+    color: #1F2233;
+    font-family: 'Nunito Sans', system-ui, sans-serif;
+  }
+  h1, h2, h3 {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+  }
+  :focus-visible {
+    outline: 2px solid #7C5CFC;
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    background: #FFFFFF;
+    border-radius: 20px;
+    box-shadow: 0 6px 20px rgba(124,92,252,0.12);
+  }
+  .progress-track {
+    background: #EDEBF5;
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+  .pill-btn {
+    border-radius: 999px;
+    font-weight: 700;
+  }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.15) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+.pop-in { animation: pop 0.45s cubic-bezier(.34,1.56,.64,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .pop-in { animation: none; }
+}
