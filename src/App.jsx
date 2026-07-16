@@ -10,8 +10,8 @@ function TopNav() {
   const location = useLocation()
   const isActive = (path) => location.pathname === path
   const items = [
-    ['/', 'Allievi'],
-    ['/esercizi', 'Banca esercizi'],
+    ['/', 'Students'],
+    ['/esercizi', 'Exercise bank'],
     ['/shadowing', 'Shadowing 🎬'],
   ]
 
