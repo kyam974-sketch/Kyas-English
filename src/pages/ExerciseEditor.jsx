@@ -224,7 +224,7 @@ export default function ExerciseEditor() {
         {(type === 'grammar' || type === 'vocab') && (
           <div>
             <p className="text-sm text-muted mb-2">
-              Scrivi la frase usando <code className="bg-violet-soft px-1 rounded">___</code> per lo spazio vuoto, poi la risposta corretta.
+              Scrivi la frase usando <code className="bg-violet-soft px-1 rounded">___</code> per ogni spazio vuoto (anche più di uno nella stessa frase). Se ci sono più spazi, scrivi le risposte separate da <code className="bg-violet-soft px-1 rounded">/</code> nello stesso ordine (es. "had / would travel").
             </p>
             <div className="flex flex-col gap-2">
               {items.map((it, i) => (
