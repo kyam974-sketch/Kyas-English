@@ -85,8 +85,8 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
   const [checked, setChecked] = useState(false)
   const [score, setScore] = useState({ correct: 0, total: 0 })
   const [saved, setSaved] = useState(false)
-  const [gameSelection, setGameSelection] = useState(null)
-  const [gameMatched, setGameMatched] = useState([])
+  const [placements, setPlacements] = useState({})
+  const [heldItem, setHeldItem] = useState(null)
 
   const { type, content } = exercise
 
@@ -113,7 +113,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
       Object.entries(content.answers || {}).forEach(([num, word]) => { total += 1; if (normalize(answers[num]) === normalize(word)) correct += 1 })
     } else if (type === 'game') {
       total = content.pairs.length
-      correct = gameMatched.length
+      correct = content.pairs.filter((p) => placements[p.id] === p.id).length
     }
 
     setScore({ correct, total })
@@ -124,23 +124,23 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
   async function save() {
     await onSaveResult({
       exercise_id: exercise.id,
-      answers: type === 'game' ? { matched: gameMatched } : answers,
+      answers: type === 'game' ? { placements } : answers,
       score: score.total > 0 ? Math.round((score.correct / score.total) * 100) / 100 : null,
     })
     setSaved(true)
   }
 
-  function pickLeft(pairId) {
-    if (gameMatched.includes(pairId)) return
-    setGameSelection(pairId)
+  function tapPoolItem(rightId) {
+    setHeldItem((h) => (h === rightId ? null : rightId))
   }
-  function pickRight(pairId) {
-    if (gameMatched.includes(pairId)) return
-    if (gameSelection === pairId) {
-      setGameMatched([...gameMatched, pairId])
-      setGameSelection(null)
-    } else if (gameSelection) {
-      setGameSelection(null)
+  function tapSlot(leftId) {
+    if (heldItem) {
+      setPlacements({ ...placements, [leftId]: heldItem })
+      setHeldItem(null)
+    } else if (placements[leftId]) {
+      const next = { ...placements }
+      delete next[leftId]
+      setPlacements(next)
     }
   }
 
@@ -219,42 +219,55 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
 
       {type === 'game' && (
         <div>
-          <p className="text-xs text-muted mb-3">Click the word first, then its matching pair.</p>
-          <div className="grid grid-cols-2 gap-2.5">
+          <p className="text-xs text-muted mb-3">Tap a word on the right, then tap where it belongs on the left.</p>
+          <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              {content.pairs.map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  onClick={() => pickLeft(p.id)}
-                  className={`rounded-xl px-3.5 py-2.5 text-sm font-bold text-center border-2 ${
-                    gameMatched.includes(p.id)
-                      ? 'bg-green-soft border-green'
-                      : gameSelection === p.id
-                      ? 'bg-violet-soft border-violet'
-                      : 'bg-violet-soft/40 border-transparent'
-                  }`}
-                >
-                  {p.left} {gameMatched.includes(p.id) && '✓'}
-                </button>
-              ))}
+              {content.pairs.map((p) => {
+                const placedId = placements[p.id]
+                const placedItem = placedId ? content.pairs.find((x) => x.id === placedId) : null
+                const isCorrect = checked ? placedId === p.id : null
+                return (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => tapSlot(p.id)}
+                    className={`rounded-xl px-3.5 py-2.5 text-sm text-left border-2 flex items-center justify-between gap-2 ${
+                      checked
+                        ? isCorrect
+                          ? 'bg-green-soft border-green'
+                          : 'bg-coral-soft border-coral'
+                        : placedItem
+                        ? 'bg-violet-soft border-violet'
+                        : 'bg-white border-dashed border-violet-soft'
+                    }`}
+                  >
+                    <span>
+                      <span className="font-bold">{p.left}</span>
+                      {placedItem && <span className="text-muted"> — {placedItem.right}</span>}
+                      {!placedItem && <span className="text-muted italic"> tap to fill...</span>}
+                    </span>
+                    {checked && <Mark correct={isCorrect} />}
+                  </button>
+                )
+              })}
             </div>
             <div className="flex flex-col gap-2">
-              {shuffledPairs.map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  onClick={() => pickRight(p.id)}
-                  className={`rounded-xl px-3.5 py-2.5 text-sm text-center border-2 ${
-                    gameMatched.includes(p.id) ? 'bg-green-soft border-green' : 'bg-white border-violet-soft'
-                  }`}
-                >
-                  {p.right}
-                </button>
-              ))}
+              {shuffledPairs
+                .filter((p) => !Object.values(placements).includes(p.id))
+                .map((p) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => tapPoolItem(p.id)}
+                    className={`rounded-xl px-3.5 py-2.5 text-sm text-center border-2 ${
+                      heldItem === p.id ? 'bg-yellow/30 border-yellow' : 'bg-white border-violet-soft'
+                    }`}
+                  >
+                    {p.right}
+                  </button>
+                ))}
             </div>
           </div>
-          <p className="font-data text-xs text-muted mt-3">{gameMatched.length} / {content.pairs.length} matched</p>
         </div>
       )}
 
