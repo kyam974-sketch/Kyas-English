@@ -208,7 +208,7 @@ export default function StudentDetail() {
       ) : (
         <ul className="flex flex-col gap-3">
           {lessons.map((l) => (
-            <li key={l.id} className="card p-4">
+            <Link key={l.id} to={`/studenti/${id}/sessione/${l.id}`} className="card p-4 block hover:-translate-y-0.5 transition-transform">
               <div className="flex items-baseline justify-between">
                 <span className="font-data text-xs text-muted">{l.lesson_date}</span>
                 {l.points_earned > 0 && (
@@ -225,7 +225,8 @@ export default function StudentDetail() {
                 </div>
               )}
               {l.notes && <p className="text-sm text-ink mt-2">{l.notes}</p>}
-            </li>
+              <span className="text-xs text-violet font-bold mt-2 inline-block">Riprendi →</span>
+            </Link>
           ))}
         </ul>
       )}

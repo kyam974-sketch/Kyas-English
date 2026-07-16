@@ -5,20 +5,24 @@ import ExerciseRunner from '../components/ExerciseRunner.jsx'
 import { computeStreak, computeTopicProgress, checkNewBadges } from '../lib/gamification.js'
 
 export default function LessonSession() {
-  const { id } = useParams()
+  const { id, lessonId: lessonIdParam } = useParams()
   const navigate = useNavigate()
   const [student, setStudent] = useState(null)
   const [allExercises, setAllExercises] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [topics, setTopics] = useState('')
   const [notes, setNotes] = useState('')
-  const [lessonId, setLessonId] = useState(null)
+  const [lessonId, setLessonId] = useState(lessonIdParam || null)
+  const [resuming, setResuming] = useState(Boolean(lessonIdParam))
   const [wasFirstLesson, setWasFirstLesson] = useState(false)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [sessionResults, setSessionResults] = useState([])
   const [summaryData, setSummaryData] = useState(null)
   const [finishing, setFinishing] = useState(false)
+
+  const [existingSummary, setExistingSummary] = useState(null)
+  const [existingPointsEarned, setExistingPointsEarned] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -28,9 +32,19 @@ export default function LessonSession() {
       setStudent(s)
       setAllExercises(ex || [])
       setWasFirstLesson((count || 0) === 0)
+
+      if (lessonIdParam) {
+        const { data: existingLesson } = await supabase.from('pl_lessons').select('*').eq('id', lessonIdParam).single()
+        if (existingLesson) {
+          setTopics((existingLesson.topics || []).join(', '))
+          setNotes(existingLesson.notes || '')
+          setExistingSummary(existingLesson.summary || null)
+          setExistingPointsEarned(existingLesson.points_earned || 0)
+        }
+      }
     }
     load()
-  }, [id])
+  }, [id, lessonIdParam])
 
   async function startLesson(e) {
     e.preventDefault()
@@ -86,9 +100,14 @@ export default function LessonSession() {
       ? sessionResults.map((r) => `${r.title}: ${r.score != null ? Math.round(r.score * 100) + '%' : '—'}`).join(', ')
       : 'nessun esercizio svolto in questa sessione'
 
-    const summary = `Oggi abbiamo lavorato su: ${topics || 'ripasso generale'}.\nEsercizi svolti — ${perf}.${notes ? `\nNote: ${notes}` : ''}${newBadges.length ? `\nTraguardi sbloccati: ${newBadges.map((b) => b.label).join(', ')} 🎉` : ''}`
+    const newChunk = `Oggi abbiamo lavorato su: ${topics || 'ripasso generale'}.\nEsercizi svolti — ${perf}.${notes ? `\nNote: ${notes}` : ''}${newBadges.length ? `\nTraguardi sbloccati: ${newBadges.map((b) => b.label).join(', ')} 🎉` : ''}`
 
-    await supabase.from('pl_lessons').update({ summary, points_earned: sessionPoints }).eq('id', lessonId)
+    const summary = existingSummary
+      ? `${existingSummary}\n\n— aggiornamento del ${new Date().toLocaleDateString('it-IT')} —\n${newChunk}`
+      : newChunk
+    const totalPointsEarned = existingPointsEarned + sessionPoints
+
+    await supabase.from('pl_lessons').update({ summary, points_earned: totalPointsEarned }).eq('id', lessonId)
 
     setSummaryData({ sessionPoints, streak, newBadges, summary })
     setFinishing(false)
@@ -159,7 +178,12 @@ export default function LessonSession() {
       ) : (
         <div>
           <div className="card p-4 mb-6 border-l-4 border-green">
-            <p className="text-sm text-green font-data font-bold">Lezione registrata ✓ — ora scegli gli esercizi</p>
+            <p className="text-sm text-green font-data font-bold">
+              {resuming ? 'Lezione ripresa ✓ — continua ad aggiungere esercizi' : 'Lezione registrata ✓ — ora scegli gli esercizi'}
+            </p>
+            {resuming && topics && (
+              <p className="text-xs text-muted mt-1">Argomenti: {topics}</p>
+            )}
           </div>
 
           {selectedIds.length === 0 ? (
