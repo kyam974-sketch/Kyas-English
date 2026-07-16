@@ -1,0 +1,218 @@
+import { useEffect, useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase.js'
+import StreakBadge from '../components/StreakBadge.jsx'
+import { computeStreak, computeTopicProgress, allBadgeDefinitions } from '../lib/gamification.js'
+
+const TOPIC_COLORS = ['bg-green', 'bg-yellow', 'bg-coral', 'bg-blue', 'bg-violet']
+
+export default function StudentDetail() {
+  const { id } = useParams()
+  const [student, setStudent] = useState(null)
+  const [lessons, setLessons] = useState([])
+  const [topicProgress, setTopicProgress] = useState([])
+  const [streak, setStreak] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ name: '', level: '', exam_date: '', notes: '' })
+  const [error, setError] = useState(null)
+
+  async function load() {
+    setLoading(true)
+    const { data: s, error: se } = await supabase.from('pl_students').select('*').eq('id', id).single()
+    const { data: l } = await supabase
+      .from('pl_lessons')
+      .select('*')
+      .eq('student_id', id)
+      .order('lesson_date', { ascending: false })
+    const { data: results } = await supabase
+      .from('pl_exercise_results')
+      .select('*')
+      .eq('student_id', id)
+    const { data: exercises } = await supabase.from('pl_exercises').select('id, topic_tag')
+
+    if (se) setError(se.message)
+    if (s) {
+      setStudent(s)
+      setForm({
+        name: s.name || '',
+        level: s.level || '',
+        exam_date: s.exam_date || '',
+        notes: s.notes || '',
+      })
+    }
+    setLessons(l || [])
+
+    const exercisesById = {}
+    ;(exercises || []).forEach((e) => (exercisesById[e.id] = e))
+    setTopicProgress(computeTopicProgress(results || [], exercisesById))
+    setStreak(computeStreak((results || []).map((r) => r.completed_at)))
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+  }, [id])
+
+  async function saveProfile(e) {
+    e.preventDefault()
+    const { error } = await supabase
+      .from('pl_students')
+      .update({
+        name: form.name.trim(),
+        level: form.level.trim() || null,
+        exam_date: form.exam_date || null,
+        notes: form.notes.trim() || null,
+      })
+      .eq('id', id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setEditing(false)
+    load()
+  }
+
+  if (loading) return <p className="text-muted">Carico...</p>
+  if (!student) return <p className="text-coral">Allievo non trovato.</p>
+
+  const earnedKeys = new Set((student.badges || []).map((b) => b.key))
+  const lastLessonWithSummary = lessons.find((l) => l.summary)
+
+  return (
+    <div>
+      <Link to="/" className="text-sm text-violet font-bold hover:underline">← Tutti gli allievi</Link>
+
+      <div className="card p-6 mt-3 mb-7 border-b-4 border-yellow">
+        {!editing ? (
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="font-display text-2xl text-ink">{student.name}</h1>
+              {student.level && <p className="text-muted text-sm mt-1">{student.level}</p>}
+              {student.exam_date && (
+                <p className="font-data text-xs text-coral font-bold mt-1">Esame: {student.exam_date}</p>
+              )}
+              {student.notes && <p className="text-sm text-ink mt-3">{student.notes}</p>}
+              <div className="mt-3">
+                <StreakBadge points={student.points || 0} streak={streak} />
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <button onClick={() => setEditing(true)} className="text-sm text-violet font-bold hover:underline">
+                Modifica
+              </button>
+              <Link
+                to={`/studenti/${id}/sessione`}
+                className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 shadow-md shadow-violet/30"
+              >
+                + Nuova sessione
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={saveProfile} className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">Nome</span>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">Livello / classe</span>
+              <input value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">Data esame/scadenza</span>
+              <input type="date" value={form.exam_date} onChange={(e) => setForm({ ...form, exam_date: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+              <span className="text-muted">Note</span>
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" rows={3} />
+            </label>
+            <div className="sm:col-span-2 flex gap-2">
+              <button type="submit" className="bg-violet text-white text-sm px-5 py-2 rounded-pill">Salva</button>
+              <button type="button" onClick={() => setEditing(false)} className="text-sm text-muted px-4 py-2">Annulla</button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      {error && <p className="text-coral text-sm mb-4">Errore: {error}</p>}
+
+      {topicProgress.length > 0 && (
+        <>
+          <h2 className="font-display text-xl text-ink mb-3">Quanto è pronta 📊</h2>
+          <div className="card p-6 mb-7">
+            {topicProgress.map((t, i) => (
+              <div key={t.topic} className="mb-3.5 last:mb-0">
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span>{t.topic}</span>
+                  <span className="font-data text-muted">{t.pct}%</span>
+                </div>
+                <div className="progress-track">
+                  <div
+                    className={`progress-fill ${TOPIC_COLORS[i % TOPIC_COLORS.length]}`}
+                    style={{ width: `${t.pct}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <h2 className="font-display text-xl text-ink mb-3">Traguardi 🏅</h2>
+      <div className="flex gap-3 flex-wrap mb-7">
+        {allBadgeDefinitions().map((b) => (
+          <div
+            key={b.key}
+            className="card px-4 py-3.5 text-center w-28"
+            style={{ opacity: earnedKeys.has(b.key) ? 1 : 0.35 }}
+          >
+            <div className="text-2xl">{b.icon}</div>
+            <div className="text-[11px] mt-1.5 font-bold">{b.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {lastLessonWithSummary && (
+        <>
+          <h2 className="font-display text-xl text-ink mb-3">Ultimo riepilogo 📝</h2>
+          <div className="card p-5 mb-7">
+            <div className="font-data text-xs text-muted">{lastLessonWithSummary.lesson_date}</div>
+            <p className="text-sm mt-2 leading-relaxed whitespace-pre-wrap">{lastLessonWithSummary.summary}</p>
+          </div>
+        </>
+      )}
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-xl text-ink">Storico lezioni</h2>
+      </div>
+
+      {lessons.length === 0 ? (
+        <p className="text-muted text-sm">Nessuna lezione registrata ancora.</p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {lessons.map((l) => (
+            <li key={l.id} className="card p-4">
+              <div className="flex items-baseline justify-between">
+                <span className="font-data text-xs text-muted">{l.lesson_date}</span>
+                {l.points_earned > 0 && (
+                  <span className="font-data text-xs text-gold font-bold">+{l.points_earned} pt</span>
+                )}
+              </div>
+              {l.topics && l.topics.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {l.topics.map((t, i) => (
+                    <span key={i} className="text-xs bg-violet-soft text-violet px-2.5 py-0.5 rounded-pill font-data font-bold">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {l.notes && <p className="text-sm text-ink mt-2">{l.notes}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
