@@ -20,7 +20,6 @@ export default function LessonSession() {
   const [sessionResults, setSessionResults] = useState([])
   const [summaryData, setSummaryData] = useState(null)
   const [finishing, setFinishing] = useState(false)
-
   const [existingSummary, setExistingSummary] = useState(null)
   const [existingPointsEarned, setExistingPointsEarned] = useState(0)
 
@@ -98,12 +97,12 @@ export default function LessonSession() {
 
     const perf = sessionResults.length
       ? sessionResults.map((r) => `${r.title}: ${r.score != null ? Math.round(r.score * 100) + '%' : '—'}`).join(', ')
-      : 'nessun esercizio svolto in questa sessione'
+      : 'no exercises done in this session'
 
-    const newChunk = `Oggi abbiamo lavorato su: ${topics || 'ripasso generale'}.\nEsercizi svolti — ${perf}.${notes ? `\nNote: ${notes}` : ''}${newBadges.length ? `\nTraguardi sbloccati: ${newBadges.map((b) => b.label).join(', ')} 🎉` : ''}`
+    const newChunk = `Topics covered today: ${topics || 'general review'}.\nExercises done — ${perf}.${notes ? `\nNotes: ${notes}` : ''}${newBadges.length ? `\nNew achievements: ${newBadges.map((b) => b.label).join(', ')} 🎉` : ''}`
 
     const summary = existingSummary
-      ? `${existingSummary}\n\n— aggiornamento del ${new Date().toLocaleDateString('it-IT')} —\n${newChunk}`
+      ? `${existingSummary}\n\n— update on ${new Date().toLocaleDateString('en-GB')} —\n${newChunk}`
       : newChunk
     const totalPointsEarned = existingPointsEarned + sessionPoints
 
@@ -113,37 +112,37 @@ export default function LessonSession() {
     setFinishing(false)
   }
 
-  if (!student) return <p className="text-muted">Carico...</p>
+  if (!student) return <p className="text-muted">Loading...</p>
 
   return (
     <div>
       <Link to={`/studenti/${id}`} className="text-sm text-violet font-bold hover:underline">← {student.name}</Link>
-      <h1 className="font-display text-3xl text-ink mt-3 mb-6">Sessione con {student.name}</h1>
+      <h1 className="font-display text-3xl text-ink mt-3 mb-6">Session with {student.name}</h1>
 
-      {error && <p className="text-coral text-sm mb-4">Errore: {error}</p>}
+      {error && <p className="text-coral text-sm mb-4">Error: {error}</p>}
 
       {!lessonId ? (
         <form onSubmit={startLesson} className="card p-6 flex flex-col gap-4">
-          <p className="text-sm text-muted">Registra prima la lezione, poi scegli gli esercizi da fare insieme dal vivo.</p>
+          <p className="text-sm text-muted">Log the lesson first, then choose the exercises to do together live.</p>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted">Argomenti trattati (separati da virgola)</span>
+            <span className="text-muted">Topics covered (comma separated)</span>
             <input value={topics} onChange={(e) => setTopics(e.target.value)} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" placeholder="past simple, for-since" />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted">Note sulla lezione</span>
+            <span className="text-muted">Lesson notes</span>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" />
           </label>
           <button type="submit" disabled={saving} className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 self-start disabled:opacity-50">
-            {saving ? 'Avvio...' : 'Avvia sessione'}
+            {saving ? 'Starting...' : 'Start session'}
           </button>
         </form>
       ) : summaryData ? (
         <div className="card pop-in p-8">
           <div className="text-5xl text-center">🎉</div>
-          <h2 className="font-display text-2xl text-center text-ink mb-4">Sessione completata!</h2>
+          <h2 className="font-display text-2xl text-center text-ink mb-4">Session complete!</h2>
           <div className="flex justify-center gap-2.5 mb-5">
-            <span className="font-data text-sm bg-gold-soft text-gold px-3.5 py-1.5 rounded-pill font-bold">+{summaryData.sessionPoints} punti</span>
-            <span className="font-data text-sm bg-coral-soft text-coral px-3.5 py-1.5 rounded-pill font-bold">🔥 streak {summaryData.streak} {summaryData.streak === 1 ? 'giorno' : 'giorni'}</span>
+            <span className="font-data text-sm bg-gold-soft text-gold px-3.5 py-1.5 rounded-pill font-bold">+{summaryData.sessionPoints} points</span>
+            <span className="font-data text-sm bg-coral-soft text-coral px-3.5 py-1.5 rounded-pill font-bold">🔥 streak {summaryData.streak} {summaryData.streak === 1 ? 'day' : 'days'}</span>
           </div>
           {summaryData.newBadges.length > 0 && (
             <div className="flex justify-center gap-3 mb-5">
@@ -161,17 +160,17 @@ export default function LessonSession() {
               onClick={() => navigator.clipboard.writeText(summaryData.summary)}
               className="bg-violet-soft text-violet text-sm px-5 py-2.5 rounded-pill font-bold"
             >
-              Copia riepilogo
+              Copy summary
             </button>
             <a
               href={`https://wa.me/?text=${encodeURIComponent(summaryData.summary)}`}
               target="_blank" rel="noreferrer"
               className="bg-green-soft text-green text-sm px-5 py-2.5 rounded-pill font-bold"
             >
-              Condividi su WhatsApp
+              Share on WhatsApp
             </a>
             <button onClick={() => navigate(`/studenti/${id}`)} className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill font-bold">
-              Torna alla scheda
+              Back to profile
             </button>
           </div>
         </div>
@@ -179,20 +178,20 @@ export default function LessonSession() {
         <div>
           <div className="card p-4 mb-6 border-l-4 border-green">
             <p className="text-sm text-green font-data font-bold">
-              {resuming ? 'Lezione ripresa ✓ — continua ad aggiungere esercizi' : 'Lezione registrata ✓ — ora scegli gli esercizi'}
+              {resuming ? 'Lesson resumed ✓ — keep adding exercises' : 'Lesson logged ✓ — now choose the exercises'}
             </p>
             {resuming && topics && (
-              <p className="text-xs text-muted mt-1">Argomenti: {topics}</p>
+              <p className="text-xs text-muted mt-1">Topics: {topics}</p>
             )}
           </div>
 
           {selectedIds.length === 0 ? (
             <div>
-              <p className="text-sm text-muted mb-3">Seleziona uno o più esercizi dalla banca:</p>
+              <p className="text-sm text-muted mb-3">Select one or more exercises from the bank:</p>
               {allExercises.length === 0 ? (
                 <p className="text-sm text-muted">
-                  Nessun esercizio in banca ancora.{' '}
-                  <Link to="/esercizi/nuovo" className="text-violet font-bold hover:underline">Creane uno</Link>.
+                  No exercises in the bank yet.{' '}
+                  <Link to="/esercizi/nuovo" className="text-violet font-bold hover:underline">Create one</Link>.
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
@@ -203,7 +202,7 @@ export default function LessonSession() {
                         <p className="text-xs text-muted font-data">{ex.type}{ex.topic_tag ? ` · ${ex.topic_tag}` : ''}</p>
                       </div>
                       <button onClick={() => setSelectedIds([...selectedIds, ex.id])} className="text-sm text-violet font-bold hover:underline">
-                        Aggiungi
+                        Add
                       </button>
                     </li>
                   ))}
@@ -222,7 +221,7 @@ export default function LessonSession() {
                     defaultValue=""
                     className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white text-sm"
                   >
-                    <option value="">+ Aggiungi un altro esercizio...</option>
+                    <option value="">+ Add another exercise...</option>
                     {allExercises.filter((ex) => !selectedIds.includes(ex.id)).map((ex) => (
                       <option key={ex.id} value={ex.id}>{ex.title}</option>
                     ))}
@@ -233,7 +232,7 @@ export default function LessonSession() {
                   disabled={finishing}
                   className="bg-green text-white text-sm px-5 py-2.5 rounded-pill font-bold disabled:opacity-50"
                 >
-                  {finishing ? 'Concludo...' : 'Termina sessione →'}
+                  {finishing ? 'Finishing...' : 'End session →'}
                 </button>
               </div>
             </div>

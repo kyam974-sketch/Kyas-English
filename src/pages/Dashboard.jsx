@@ -96,7 +96,7 @@ export default function Dashboard() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 pt-2 flex-wrap gap-3">
-        <h1 className="font-display text-3xl text-ink">I tuoi allievi 👋</h1>
+        <h1 className="font-display text-3xl text-ink">Your students 👋</h1>
         <div className="flex gap-2">
           <button
             onClick={toggleNames}
@@ -104,49 +104,49 @@ export default function Dashboard() {
               namesVisible ? 'bg-ink text-white' : 'bg-violet-soft text-violet'
             }`}
           >
-            {namesVisible ? '🔓 Nomi visibili' : '🔒 Nomi nascosti'}
+            {namesVisible ? '🔓 Names visible' : '🔒 Names hidden'}
           </button>
           <button
             onClick={() => setShowForm((s) => !s)}
             className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 shadow-md shadow-violet/30"
           >
-            {showForm ? 'Annulla' : '+ Nuovo allievo'}
+            {showForm ? 'Cancel' : '+ New student'}
           </button>
         </div>
       </div>
 
       {!namesVisible && (
         <p className="text-xs text-muted mb-4">
-          I nomi sono nascosti per privacy — mostra solo le iniziali. Tocca "Nomi nascosti" per rivelarli quando sei da sola.
+          Names are hidden for privacy — showing initials only. Tap "Names hidden" to reveal them when you're alone.
         </p>
       )}
 
-      {error && <p className="text-coral text-sm mb-4">Errore: {error}</p>}
+      {error && <p className="text-coral text-sm mb-4">Error: {error}</p>}
 
       {showForm && (
         <form onSubmit={handleCreate} className="card p-5 mb-8">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Nome *</span>
+              <span className="text-muted">Name *</span>
               <input
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white"
-                placeholder="Nome e cognome"
+                placeholder="Full name"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Livello / classe</span>
+              <span className="text-muted">Level / class</span>
               <input
                 value={form.level}
                 onChange={(e) => setForm({ ...form, level: e.target.value })}
                 className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white"
-                placeholder="es. Adulto A1, 4a superiore, ecc."
+                placeholder="e.g. Adult A1, Year 4 high school, etc."
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Data esame/scadenza (opzionale)</span>
+              <span className="text-muted">Exam / deadline date (optional)</span>
               <input
                 type="date"
                 value={form.exam_date}
@@ -155,7 +155,7 @@ export default function Dashboard() {
               />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="text-muted">Note</span>
+              <span className="text-muted">Notes</span>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -169,15 +169,15 @@ export default function Dashboard() {
             disabled={saving}
             className="mt-4 bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 disabled:opacity-50"
           >
-            {saving ? 'Salvo...' : 'Salva allievo'}
+            {saving ? 'Saving...' : 'Save student'}
           </button>
         </form>
       )}
 
       {loading ? (
-        <p className="text-muted">Carico...</p>
+        <p className="text-muted">Loading...</p>
       ) : students.length === 0 ? (
-        <p className="text-muted">Nessun allievo ancora. Aggiungine uno per iniziare.</p>
+        <p className="text-muted">No students yet. Add one to get started.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {students.map((s, i) => {
@@ -196,12 +196,12 @@ export default function Dashboard() {
                 </div>
                 <div className="min-w-0">
                   <h2 className="font-display text-xl text-ink truncate">
-                    {namesVisible ? s.name : 'Allievo/a'}
+                    {namesVisible ? s.name : 'Student'}
                   </h2>
                   {namesVisible && s.level && <p className="text-sm text-muted mt-0.5 truncate">{s.level}</p>}
                   {s.exam_date && (
                     <p className={`text-xs font-data mt-1 font-bold ${urgent ? 'text-coral' : 'text-muted'}`}>
-                      {days >= 0 ? `ESAME TRA ${days} GIORNI ⏳` : 'DATA ESAME PASSATA'}
+                      {days >= 0 ? `EXAM IN ${days} DAYS ⏳` : 'EXAM DATE PASSED'}
                     </p>
                   )}
                   <div className="mt-2">

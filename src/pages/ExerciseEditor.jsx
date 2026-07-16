@@ -141,7 +141,7 @@ export default function ExerciseEditor() {
   function QuestionsEditor({ list, setList }) {
     return (
       <div>
-        <p className="text-sm text-muted mb-2">Domande</p>
+        <p className="text-sm text-muted mb-2">Questions</p>
         <div className="flex flex-col gap-3">
           {list.map((q, i) => (
             <div key={q.id} className="border-2 border-violet-soft rounded-xl p-3 flex flex-col gap-2">
@@ -149,7 +149,7 @@ export default function ExerciseEditor() {
                 <input
                   value={q.text}
                   onChange={(e) => { const next = [...list]; next[i].text = e.target.value; setList(next) }}
-                  placeholder="Domanda"
+                  placeholder="Question"
                   className={inputCls + ' flex-1'}
                 />
                 <select
@@ -157,8 +157,8 @@ export default function ExerciseEditor() {
                   onChange={(e) => { const next = [...list]; next[i].type = e.target.value; setList(next) }}
                   className={inputCls}
                 >
-                  <option value="open">Risposta aperta</option>
-                  <option value="mc">Scelta multipla</option>
+                  <option value="open">Open answer</option>
+                  <option value="mc">Multiple choice</option>
                 </select>
                 <button type="button" onClick={() => setList(list.filter((x) => x.id !== q.id))} className="text-coral text-xs px-2">✕</button>
               </div>
@@ -166,14 +166,14 @@ export default function ExerciseEditor() {
                 <input
                   value={q.options}
                   onChange={(e) => { const next = [...list]; next[i].options = e.target.value; setList(next) }}
-                  placeholder="Opzioni separate da virgola"
+                  placeholder="Options separated by commas"
                   className={inputCls}
                 />
               )}
               <input
                 value={q.answer}
                 onChange={(e) => { const next = [...list]; next[i].answer = e.target.value; setList(next) }}
-                placeholder="Risposta corretta"
+                placeholder="Correct answer"
                 className={inputCls}
               />
             </div>
@@ -184,7 +184,7 @@ export default function ExerciseEditor() {
           onClick={() => setList([...list, { id: newId(), text: '', type: 'open', options: '', answer: '' }])}
           className="text-violet text-sm mt-2 font-bold hover:underline"
         >
-          + Aggiungi domanda
+          + Add question
         </button>
       </div>
     )
@@ -193,38 +193,38 @@ export default function ExerciseEditor() {
   return (
     <div>
       <h1 className="font-display text-3xl text-ink mb-6 pt-2">
-        {editing ? 'Modifica esercizio' : 'Nuovo esercizio'}
+        {editing ? 'Edit exercise' : 'New exercise'}
       </h1>
 
-      {error && <p className="text-coral text-sm mb-4">Errore: {error}</p>}
+      {error && <p className="text-coral text-sm mb-4">Error: {error}</p>}
 
       <form onSubmit={handleSave} className="card p-6 flex flex-col gap-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted">Tipo</span>
+            <span className="text-muted">Type</span>
             <select value={type} onChange={(e) => setType(e.target.value)} disabled={editing} className={inputCls}>
-              <option value="grammar">Grammar (frasi da completare)</option>
-              <option value="vocab">Vocabulary (frasi da completare)</option>
+              <option value="grammar">Grammar (fill in the blanks)</option>
+              <option value="vocab">Vocabulary (fill in the blanks)</option>
               <option value="reading">Reading comprehension</option>
-              <option value="cloze">Cloze (inserimento parole)</option>
-              <option value="listening">Listening (ascolto + domande)</option>
-              <option value="game">Gioco — Abbinamento</option>
+              <option value="cloze">Cloze (word insertion)</option>
+              <option value="listening">Listening (audio + questions)</option>
+              <option value="game">Game — Matching</option>
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted">Titolo *</span>
-            <input required value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} placeholder="es. Past Simple vs Continuous" />
+            <span className="text-muted">Title *</span>
+            <input required value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} placeholder="e.g. Past Simple vs Continuous" />
           </label>
           <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-            <span className="text-muted">Argomento (per filtrare e calcolare i progressi)</span>
-            <input value={topicTag} onChange={(e) => setTopicTag(e.target.value)} className={inputCls} placeholder="es. conditional-1, for-since, family" />
+            <span className="text-muted">Topic (used for filtering and progress tracking)</span>
+            <input value={topicTag} onChange={(e) => setTopicTag(e.target.value)} className={inputCls} placeholder="e.g. conditional-1, for-since, family" />
           </label>
         </div>
 
         {(type === 'grammar' || type === 'vocab') && (
           <div>
             <p className="text-sm text-muted mb-2">
-              Scrivi la frase usando <code className="bg-violet-soft px-1 rounded">___</code> per ogni spazio vuoto (anche più di uno nella stessa frase). Se ci sono più spazi, scrivi le risposte separate da <code className="bg-violet-soft px-1 rounded">/</code> nello stesso ordine (es. "had / would travel").
+              Write the sentence using <code className="bg-violet-soft px-1 rounded">___</code> for each blank (you can have more than one per sentence). If there's more than one blank, write the answers separated by <code className="bg-violet-soft px-1 rounded">/</code> in the same order (e.g. "had / would travel").
             </p>
             <div className="flex flex-col gap-2">
               {items.map((it, i) => (
@@ -235,14 +235,14 @@ export default function ExerciseEditor() {
                 </div>
               ))}
             </div>
-            <button type="button" onClick={() => setItems([...items, { id: newId(), text: '', answer: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Aggiungi frase</button>
+            <button type="button" onClick={() => setItems([...items, { id: newId(), text: '', answer: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add sentence</button>
           </div>
         )}
 
         {type === 'reading' && (
           <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Testo</span>
+              <span className="text-muted">Passage</span>
               <textarea value={passage} onChange={(e) => setPassage(e.target.value)} rows={5} className={inputCls} />
             </label>
             <QuestionsEditor list={questions} setList={setQuestions} />
@@ -252,15 +252,15 @@ export default function ExerciseEditor() {
         {type === 'cloze' && (
           <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Testo — usa <code className="bg-violet-soft px-1 rounded">{'{{1}}'}</code>, <code className="bg-violet-soft px-1 rounded">{'{{2}}'}</code> ecc. per gli spazi</span>
+              <span className="text-muted">Text — use <code className="bg-violet-soft px-1 rounded">{'{{1}}'}</code>, <code className="bg-violet-soft px-1 rounded">{'{{2}}'}</code> etc. for the blanks</span>
               <textarea value={clozeText} onChange={(e) => setClozeText(e.target.value)} rows={5} className={inputCls} placeholder={'My family has always loved spending time together. If I {{1}} more time...'} />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Banca di parole (separate da virgola)</span>
+              <span className="text-muted">Word bank (comma separated)</span>
               <input value={wordBank} onChange={(e) => setWordBank(e.target.value)} className={inputCls} placeholder="had, have, would" />
             </label>
             <div>
-              <p className="text-sm text-muted mb-2">Chiave di risposta</p>
+              <p className="text-sm text-muted mb-2">Answer key</p>
               <div className="flex flex-col gap-2">
                 {clozeAnswers.map((a, i) => (
                   <div key={i} className="flex gap-2">
@@ -270,7 +270,7 @@ export default function ExerciseEditor() {
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => setClozeAnswers([...clozeAnswers, { number: String(clozeAnswers.length + 1), word: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Aggiungi risposta</button>
+              <button type="button" onClick={() => setClozeAnswers([...clozeAnswers, { number: String(clozeAnswers.length + 1), word: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add answer</button>
             </div>
           </div>
         )}
@@ -278,7 +278,7 @@ export default function ExerciseEditor() {
         {type === 'listening' && (
           <div className="flex flex-col gap-4">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Link audio/video (YouTube, mp3, ecc.)</span>
+              <span className="text-muted">Audio/video link (YouTube, mp3, etc.)</span>
               <input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} className={inputCls} placeholder="https://..." />
             </label>
             <QuestionsEditor list={listeningQuestions} setList={setListeningQuestions} />
@@ -287,22 +287,22 @@ export default function ExerciseEditor() {
 
         {type === 'game' && (
           <div>
-            <p className="text-sm text-muted mb-2">Coppie da abbinare (es. forma verbale ↔ definizione)</p>
+            <p className="text-sm text-muted mb-2">Pairs to match (e.g. verb form ↔ definition)</p>
             <div className="flex flex-col gap-2">
               {pairs.map((p, i) => (
                 <div key={p.id} className="flex gap-2">
                   <input value={p.left} onChange={(e) => { const next = [...pairs]; next[i].left = e.target.value; setPairs(next) }} placeholder="went" className={inputCls + ' flex-1'} />
-                  <input value={p.right} onChange={(e) => { const next = [...pairs]; next[i].right = e.target.value; setPairs(next) }} placeholder="past simple di go" className={inputCls + ' flex-1'} />
+                  <input value={p.right} onChange={(e) => { const next = [...pairs]; next[i].right = e.target.value; setPairs(next) }} placeholder="past simple of go" className={inputCls + ' flex-1'} />
                   <button type="button" onClick={() => setPairs(pairs.filter((x) => x.id !== p.id))} className="text-coral text-xs px-2">✕</button>
                 </div>
               ))}
             </div>
-            <button type="button" onClick={() => setPairs([...pairs, { id: newId(), left: '', right: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Aggiungi coppia</button>
+            <button type="button" onClick={() => setPairs([...pairs, { id: newId(), left: '', right: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add pair</button>
           </div>
         )}
 
         <button type="submit" disabled={saving} className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 disabled:opacity-50 self-start">
-          {saving ? 'Salvo...' : 'Salva esercizio'}
+          {saving ? 'Saving...' : 'Save exercise'}
         </button>
       </form>
     </div>

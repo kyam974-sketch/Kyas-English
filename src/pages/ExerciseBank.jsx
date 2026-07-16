@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 
 const TYPE_LABELS = {
   grammar: 'Grammar', reading: 'Reading', cloze: 'Cloze', vocab: 'Vocabulary',
-  listening: 'Listening 🎧', game: 'Gioco ⚡',
+  listening: 'Listening 🎧', game: 'Game ⚡',
 }
 
 export default function ExerciseBank() {
@@ -24,7 +24,7 @@ export default function ExerciseBank() {
   useEffect(() => { load() }, [])
 
   async function handleDelete(id) {
-    if (!confirm('Eliminare questo esercizio dalla banca?')) return
+    if (!confirm('Delete this exercise from the bank?')) return
     const { error } = await supabase.from('pl_exercises').delete().eq('id', id)
     if (error) { setError(error.message); return }
     load()
@@ -35,9 +35,9 @@ export default function ExerciseBank() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 pt-2">
-        <h1 className="font-display text-3xl text-ink">Banca esercizi</h1>
+        <h1 className="font-display text-3xl text-ink">Exercise bank</h1>
         <Link to="/esercizi/nuovo" className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 shadow-md shadow-violet/30">
-          + Nuovo esercizio
+          + New exercise
         </Link>
       </div>
 
@@ -50,17 +50,17 @@ export default function ExerciseBank() {
               filter === t ? 'bg-ink text-white' : 'bg-white text-muted hover:bg-violet-soft'
             }`}
           >
-            {t === 'all' ? 'Tutti' : TYPE_LABELS[t]}
+            {t === 'all' ? 'All' : TYPE_LABELS[t]}
           </button>
         ))}
       </div>
 
-      {error && <p className="text-coral text-sm mb-3">Errore: {error}</p>}
+      {error && <p className="text-coral text-sm mb-3">Error: {error}</p>}
 
       {loading ? (
-        <p className="text-muted">Carico...</p>
+        <p className="text-muted">Loading...</p>
       ) : filtered.length === 0 ? (
-        <p className="text-muted text-sm">Nessun esercizio qui ancora.</p>
+        <p className="text-muted text-sm">No exercises here yet.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {filtered.map((ex) => (
@@ -73,8 +73,8 @@ export default function ExerciseBank() {
                 </div>
               </div>
               <div className="flex gap-3 shrink-0 text-sm">
-                <Link to={`/esercizi/${ex.id}/modifica`} className="text-violet font-bold hover:underline">Modifica</Link>
-                <button onClick={() => handleDelete(ex.id)} className="text-coral font-bold hover:underline">Elimina</button>
+                <Link to={`/esercizi/${ex.id}/modifica`} className="text-violet font-bold hover:underline">Edit</Link>
+                <button onClick={() => handleDelete(ex.id)} className="text-coral font-bold hover:underline">Delete</button>
               </div>
             </li>
           ))}

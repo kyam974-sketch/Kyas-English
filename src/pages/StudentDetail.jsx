@@ -75,7 +75,7 @@ export default function StudentDetail() {
   }
 
   async function deleteStudent() {
-    if (!confirm(`Eliminare definitivamente ${student.name}? Verranno cancellati anche storico lezioni, risultati esercizi e punti. Non è recuperabile.`)) return
+    if (!confirm(`Permanently delete ${student.name}? This will also delete their lesson history, exercise results, and points. This cannot be undone.`)) return
     const { error } = await supabase.from('pl_students').delete().eq('id', id)
     if (error) {
       setError(error.message)
@@ -84,15 +84,15 @@ export default function StudentDetail() {
     navigate('/')
   }
 
-  if (loading) return <p className="text-muted">Carico...</p>
-  if (!student) return <p className="text-coral">Allievo non trovato.</p>
+  if (loading) return <p className="text-muted">Loading...</p>
+  if (!student) return <p className="text-coral">Student not found.</p>
 
   const earnedKeys = new Set((student.badges || []).map((b) => b.key))
   const lastLessonWithSummary = lessons.find((l) => l.summary)
 
   return (
     <div>
-      <Link to="/" className="text-sm text-violet font-bold hover:underline">← Tutti gli allievi</Link>
+      <Link to="/" className="text-sm text-violet font-bold hover:underline">← All students</Link>
 
       <div className="card p-6 mt-3 mb-7 border-b-4 border-yellow">
         {!editing ? (
@@ -101,7 +101,7 @@ export default function StudentDetail() {
               <h1 className="font-display text-2xl text-ink">{student.name}</h1>
               {student.level && <p className="text-muted text-sm mt-1">{student.level}</p>}
               {student.exam_date && (
-                <p className="font-data text-xs text-coral font-bold mt-1">Esame: {student.exam_date}</p>
+                <p className="font-data text-xs text-coral font-bold mt-1">Exam: {student.exam_date}</p>
               )}
               {student.notes && <p className="text-sm text-ink mt-3">{student.notes}</p>}
               <div className="mt-3">
@@ -111,51 +111,51 @@ export default function StudentDetail() {
             <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="flex gap-3">
                 <button onClick={() => setEditing(true)} className="text-sm text-violet font-bold hover:underline">
-                  Modifica
+                  Edit
                 </button>
                 <button onClick={deleteStudent} className="text-sm text-coral font-bold hover:underline">
-                  Elimina
+                  Delete
                 </button>
               </div>
               <Link
                 to={`/studenti/${id}/sessione`}
                 className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 shadow-md shadow-violet/30"
               >
-                + Nuova sessione
+                + New session
               </Link>
             </div>
           </div>
         ) : (
           <form onSubmit={saveProfile} className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Nome</span>
+              <span className="text-muted">Name</span>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Livello / classe</span>
+              <span className="text-muted">Level / class</span>
               <input value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted">Data esame/scadenza</span>
+              <span className="text-muted">Exam / deadline date</span>
               <input type="date" value={form.exam_date} onChange={(e) => setForm({ ...form, exam_date: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="text-muted">Note</span>
+              <span className="text-muted">Notes</span>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white" rows={3} />
             </label>
             <div className="sm:col-span-2 flex gap-2">
-              <button type="submit" className="bg-violet text-white text-sm px-5 py-2 rounded-pill">Salva</button>
-              <button type="button" onClick={() => setEditing(false)} className="text-sm text-muted px-4 py-2">Annulla</button>
+              <button type="submit" className="bg-violet text-white text-sm px-5 py-2 rounded-pill">Save</button>
+              <button type="button" onClick={() => setEditing(false)} className="text-sm text-muted px-4 py-2">Cancel</button>
             </div>
           </form>
         )}
       </div>
 
-      {error && <p className="text-coral text-sm mb-4">Errore: {error}</p>}
+      {error && <p className="text-coral text-sm mb-4">Error: {error}</p>}
 
       {topicProgress.length > 0 && (
         <>
-          <h2 className="font-display text-xl text-ink mb-3">Quanto è pronta 📊</h2>
+          <h2 className="font-display text-xl text-ink mb-3">Progress by topic 📊</h2>
           <div className="card p-6 mb-7">
             {topicProgress.map((t, i) => (
               <div key={t.topic} className="mb-3.5 last:mb-0">
@@ -175,7 +175,7 @@ export default function StudentDetail() {
         </>
       )}
 
-      <h2 className="font-display text-xl text-ink mb-3">Traguardi 🏅</h2>
+      <h2 className="font-display text-xl text-ink mb-3">Achievements 🏅</h2>
       <div className="flex gap-3 flex-wrap mb-7">
         {allBadgeDefinitions().map((b) => (
           <div
@@ -191,7 +191,7 @@ export default function StudentDetail() {
 
       {lastLessonWithSummary && (
         <>
-          <h2 className="font-display text-xl text-ink mb-3">Ultimo riepilogo 📝</h2>
+          <h2 className="font-display text-xl text-ink mb-3">Latest summary 📝</h2>
           <div className="card p-5 mb-7">
             <div className="font-data text-xs text-muted">{lastLessonWithSummary.lesson_date}</div>
             <p className="text-sm mt-2 leading-relaxed whitespace-pre-wrap">{lastLessonWithSummary.summary}</p>
@@ -200,11 +200,11 @@ export default function StudentDetail() {
       )}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-xl text-ink">Storico lezioni</h2>
+        <h2 className="font-display text-xl text-ink">Lesson history</h2>
       </div>
 
       {lessons.length === 0 ? (
-        <p className="text-muted text-sm">Nessuna lezione registrata ancora.</p>
+        <p className="text-muted text-sm">No lessons logged yet.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {lessons.map((l) => (
@@ -225,7 +225,7 @@ export default function StudentDetail() {
                 </div>
               )}
               {l.notes && <p className="text-sm text-ink mt-2">{l.notes}</p>}
-              <span className="text-xs text-violet font-bold mt-2 inline-block">Riprendi →</span>
+              <span className="text-xs text-violet font-bold mt-2 inline-block">Resume →</span>
             </Link>
           ))}
         </ul>

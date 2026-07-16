@@ -24,13 +24,13 @@ export default function Shadowing() {
       <div className="flex items-center justify-between mb-5 pt-2 flex-wrap gap-3">
         <h1 className="font-display text-3xl text-ink">Shadowing 🎬</h1>
         <label className="flex items-center gap-2 text-sm">
-          <span className="text-muted">Allievo:</span>
+          <span className="text-muted">Student:</span>
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
             className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white text-sm"
           >
-            <option value="">Nessuno selezionato</option>
+            <option value="">None selected</option>
             {students.map((s) => (
               <option key={s.id} value={s.name}>{s.name}</option>
             ))}
@@ -39,8 +39,8 @@ export default function Shadowing() {
       </div>
 
       <p className="text-xs text-muted mb-3">
-        ShadowLab si apre qui sotto. Se hai selezionato un allievo, il nome viene passato automaticamente
-        (serve un piccolo aggiornamento al progetto ShadowLab perché lo legga — vedi le note a parte).
+        ShadowLab opens right below. If you've selected a student, their name is passed along automatically
+        (ShadowLab needs a small update to read it — see the separate notes).
       </p>
 
       <div className="card overflow-hidden" style={{ height: '75vh' }}>
