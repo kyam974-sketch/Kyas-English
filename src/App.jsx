@@ -46,6 +46,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/studenti/:id" element={<StudentDetail />} />
           <Route path="/studenti/:id/sessione" element={<LessonSession />} />
+          <Route path="/studenti/:id/sessione/:lessonId" element={<LessonSession />} />
           <Route path="/esercizi" element={<ExerciseBank />} />
           <Route path="/esercizi/nuovo" element={<ExerciseEditor />} />
           <Route path="/esercizi/:id/modifica" element={<ExerciseEditor />} />
