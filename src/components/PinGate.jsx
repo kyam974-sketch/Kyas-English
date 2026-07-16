@@ -27,7 +27,7 @@ export default function PinGate({ children }) {
       <form onSubmit={handleSubmit} className="card p-8 w-full max-w-xs text-center">
         <div className="text-4xl mb-2">🐱🇬🇧</div>
         <h1 className="font-display text-xl text-ink mb-1">Kya's English</h1>
-        <p className="text-sm text-muted mb-5">Inserisci il PIN per accedere</p>
+        <p className="text-sm text-muted mb-5">Enter the PIN to continue</p>
         <input
           type="password"
           inputMode="numeric"
@@ -39,9 +39,9 @@ export default function PinGate({ children }) {
           }`}
           placeholder="••••"
         />
-        {error && <p className="text-coral text-xs mb-3">PIN sbagliato, riprova</p>}
+        {error && <p className="text-coral text-xs mb-3">Wrong PIN, try again</p>}
         <button type="submit" className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill font-bold w-full">
-          Entra
+          Enter
         </button>
       </form>
     </div>

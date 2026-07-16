@@ -5,7 +5,7 @@ export default function StreakBadge({ points, streak }) {
         ⭐ {points} pt
       </span>
       <span className="font-data text-xs bg-coral-soft text-coral px-2.5 py-1 rounded-pill font-bold">
-        🔥 {streak} {streak === 1 ? 'giorno' : 'giorni'}
+        🔥 {streak} {streak === 1 ? 'day' : 'days'}
       </span>
     </div>
   )
