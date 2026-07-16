@@ -14,7 +14,6 @@ export default function LessonSession() {
   const [notes, setNotes] = useState('')
   const [lessonId, setLessonId] = useState(lessonIdParam || null)
   const [resuming, setResuming] = useState(Boolean(lessonIdParam))
-  const [wasFirstLesson, setWasFirstLesson] = useState(false)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [sessionResults, setSessionResults] = useState([])
@@ -27,10 +26,8 @@ export default function LessonSession() {
     async function load() {
       const { data: s } = await supabase.from('pl_students').select('*').eq('id', id).single()
       const { data: ex } = await supabase.from('pl_exercises').select('*').order('created_at', { ascending: false })
-      const { count } = await supabase.from('pl_lessons').select('id', { count: 'exact', head: true }).eq('student_id', id)
       setStudent(s)
       setAllExercises(ex || [])
-      setWasFirstLesson((count || 0) === 0)
 
       if (lessonIdParam) {
         const { data: existingLesson } = await supabase.from('pl_lessons').select('*').eq('id', lessonIdParam).single()
@@ -82,9 +79,17 @@ export default function LessonSession() {
     const topicProgress = computeTopicProgress(allResults || [], exercisesById)
     const streak = computeStreak((allResults || []).map((r) => r.completed_at))
 
+    const { data: priorFinished } = await supabase
+      .from('pl_lessons')
+      .select('id')
+      .eq('student_id', id)
+      .not('summary', 'is', null)
+      .neq('id', lessonId)
+    const isFirstLesson = (priorFinished || []).length === 0
+
     const newBadges = checkNewBadges({
       existingBadges: student.badges || [],
-      isFirstLesson: wasFirstLesson,
+      isFirstLesson,
       sessionResults,
       streak,
       topicProgress,
