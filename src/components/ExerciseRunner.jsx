@@ -1,4 +1,18 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+
+function shuffle(array) {
+  if (array.length < 2) return [...array]
+  let a = [...array]
+  let attempts = 0
+  do {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[a[i], a[j]] = [a[j], a[i]]
+    }
+    attempts += 1
+  } while (a.every((item, i) => item.id === array[i].id) && attempts < 10)
+  return a
+}
 
 function normalize(s) {
   return (s || '').trim().toLowerCase()
@@ -45,14 +59,14 @@ function GrammarItem({ it, answers, setAnswers, checked }) {
 
 function Mark({ correct }) {
   return correct ? (
-    <span className="pop-in inline-flex ml-1.5 align-middle" aria-label="corretto">
+    <span className="pop-in inline-flex ml-1.5 align-middle" aria-label="correct">
       <svg width="24" height="24" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="12" fill="#2FBF71" />
         <path d="M6 12.5 L10 16.5 L18 7.5" stroke="white" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
   ) : (
-    <span className="pop-in inline-flex ml-1.5 align-middle" aria-label="da rivedere">
+    <span className="pop-in inline-flex ml-1.5 align-middle" aria-label="needs work">
       <svg width="20" height="20" viewBox="0 0 20 20">
         <circle cx="10" cy="10" r="10" fill="#FF5C7A" />
         <path d="M6 6 L14 14 M14 6 L6 14" stroke="white" strokeWidth="2.2" fill="none" strokeLinecap="round" />
@@ -131,6 +145,10 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
   }
 
   const youtubeId = type === 'listening' ? extractYoutubeId(content.media_url) : null
+  const shuffledPairs = useMemo(
+    () => (type === 'game' ? shuffle(content.pairs) : []),
+    [exercise.id]
+  )
 
   return (
     <div className="card p-6">
@@ -168,7 +186,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
           ) : content.media_url ? (
             <audio controls src={content.media_url} className="w-full" />
           ) : (
-            <p className="text-sm text-muted bg-page p-3.5 rounded-xl">Nessun audio/video collegato a questo esercizio.</p>
+            <p className="text-sm text-muted bg-page p-3.5 rounded-xl">No audio/video linked to this exercise yet.</p>
           )}
           {content.questions.map((q) => (
             <QuestionBlock key={q.id} q={q} answers={answers} setAnswers={setAnswers} checked={checked} />
@@ -201,7 +219,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
 
       {type === 'game' && (
         <div>
-          <p className="text-xs text-muted mb-3">Clicca prima a sinistra, poi la definizione giusta a destra.</p>
+          <p className="text-xs text-muted mb-3">Click the word first, then its matching pair.</p>
           <div className="grid grid-cols-2 gap-2.5">
             <div className="flex flex-col gap-2">
               {content.pairs.map((p) => (
@@ -222,7 +240,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
               ))}
             </div>
             <div className="flex flex-col gap-2">
-              {content.pairs.map((p) => (
+              {shuffledPairs.map((p) => (
                 <button
                   type="button"
                   key={p.id}
@@ -236,18 +254,18 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
               ))}
             </div>
           </div>
-          <p className="font-data text-xs text-muted mt-3">{gameMatched.length} / {content.pairs.length} abbinati</p>
+          <p className="font-data text-xs text-muted mt-3">{gameMatched.length} / {content.pairs.length} matched</p>
         </div>
       )}
 
       <div className="flex items-center gap-4 mt-5 flex-wrap">
         <button onClick={check} className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90">
-          Correggi
+          Check
         </button>
         {checked && <span className="font-data text-sm text-ink font-bold">{score.correct} / {score.total}</span>}
         {checked && onSaveResult && (
           <button onClick={save} disabled={saved} className="text-sm text-violet font-bold hover:underline disabled:text-green disabled:no-underline">
-            {saved ? 'Salvato ✓' : 'Salva risultato'}
+            {saved ? 'Saved ✓' : 'Save result'}
           </button>
         )}
       </div>
