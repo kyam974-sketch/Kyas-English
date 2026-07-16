@@ -33,10 +33,10 @@ export function computeTopicProgress(results, exercisesById) {
 }
 
 const BADGE_CATALOG = {
-  first_lesson: { icon: '🥇', label: 'Prima lezione' },
-  perfect_score: { icon: '🎯', label: '10/10 in un esercizio' },
-  streak_3: { icon: '🔥', label: '3 giorni di fila' },
-  topic_mastered: { icon: '🏆', label: 'Argomento padroneggiato' },
+  first_lesson: { icon: '🥇', label: 'First lesson' },
+  perfect_score: { icon: '🎯', label: 'Perfect score' },
+  streak_3: { icon: '🔥', label: '3-day streak' },
+  topic_mastered: { icon: '🏆', label: 'Topic mastered' },
 }
 
 // Controlla quali nuovi badge sono stati sbloccati in questa sessione
