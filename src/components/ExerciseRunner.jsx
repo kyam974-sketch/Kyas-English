@@ -4,6 +4,45 @@ function normalize(s) {
   return (s || '').trim().toLowerCase()
 }
 
+function splitAnswerParts(answer, blanksCount) {
+  const parts = (answer || '').split('/').map((a) => a.trim())
+  return parts.length === blanksCount ? parts : null
+}
+
+function GrammarItem({ it, answers, setAnswers, checked }) {
+  const parts = it.text.split('___')
+  const blanksCount = parts.length - 1
+  const expectedParts = splitAnswerParts(it.answer, blanksCount)
+
+  const userValues = Array.from({ length: blanksCount }, (_, i) => answers[`${it.id}__${i}`] || '')
+  const allCorrect = expectedParts
+    ? expectedParts.every((exp, i) => normalize(userValues[i]) === normalize(exp))
+    : normalize(userValues.join(' / ')) === normalize(it.answer)
+
+  return (
+    <div className="flex items-center flex-wrap gap-1 text-sm">
+      {parts.map((part, i) => (
+        <span key={i} className="flex items-center gap-1">
+          <span>{part}</span>
+          {i < blanksCount && (
+            <>
+              <input
+                value={answers[`${it.id}__${i}`] || ''}
+                onChange={(e) => setAnswers({ ...answers, [`${it.id}__${i}`]: e.target.value })}
+                className="border-b-2 border-violet-soft bg-transparent px-1 w-28 focus:border-violet outline-none"
+              />
+              {checked && expectedParts && (
+                <Mark correct={normalize(userValues[i]) === normalize(expectedParts[i])} />
+              )}
+            </>
+          )}
+        </span>
+      ))}
+      {checked && !expectedParts && <Mark correct={allCorrect} />}
+    </div>
+  )
+}
+
 function Mark({ correct }) {
   return correct ? (
     <span className="pop-in inline-flex ml-1.5 align-middle" aria-label="corretto">
@@ -42,7 +81,18 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
     let total = 0
 
     if (type === 'grammar' || type === 'vocab') {
-      content.items.forEach((it) => { total += 1; if (normalize(answers[it.id]) === normalize(it.answer)) correct += 1 })
+      content.items.forEach((it) => {
+        total += 1
+        const blanksCount = (it.text.match(/___/g) || []).length
+        const expectedParts = splitAnswerParts(it.answer, blanksCount)
+        if (expectedParts) {
+          const userValues = Array.from({ length: blanksCount }, (_, i) => answers[`${it.id}__${i}`] || '')
+          if (expectedParts.every((exp, i) => normalize(userValues[i]) === normalize(exp))) correct += 1
+        } else {
+          const userValues = Array.from({ length: blanksCount }, (_, i) => answers[`${it.id}__${i}`] || '')
+          if (normalize(userValues.join(' / ')) === normalize(it.answer)) correct += 1
+        }
+      })
     } else if (type === 'reading' || type === 'listening') {
       content.questions.forEach((q) => { total += 1; if (normalize(answers[q.id]) === normalize(q.answer)) correct += 1 })
     } else if (type === 'cloze') {
@@ -88,21 +138,9 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
 
       {(type === 'grammar' || type === 'vocab') && (
         <div className="flex flex-col gap-3">
-          {content.items.map((it) => {
-            const [before, after] = it.text.split('___')
-            return (
-              <div key={it.id} className="flex items-center flex-wrap gap-1 text-sm">
-                <span>{before}</span>
-                <input
-                  value={answers[it.id] || ''}
-                  onChange={(e) => setAnswers({ ...answers, [it.id]: e.target.value })}
-                  className="border-b-2 border-violet-soft bg-transparent px-1 w-28 focus:border-violet outline-none"
-                />
-                <span>{after}</span>
-                {checked && <Mark correct={normalize(answers[it.id]) === normalize(it.answer)} />}
-              </div>
-            )
-          })}
+          {content.items.map((it) => (
+            <GrammarItem key={it.id} it={it} answers={answers} setAnswers={setAnswers} checked={checked} />
+          ))}
         </div>
       )}
 
