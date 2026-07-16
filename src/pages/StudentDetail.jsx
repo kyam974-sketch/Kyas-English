@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import StreakBadge from '../components/StreakBadge.jsx'
 import { computeStreak, computeTopicProgress, allBadgeDefinitions } from '../lib/gamification.js'
@@ -8,6 +8,7 @@ const TOPIC_COLORS = ['bg-green', 'bg-yellow', 'bg-coral', 'bg-blue', 'bg-violet
 
 export default function StudentDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [student, setStudent] = useState(null)
   const [lessons, setLessons] = useState([])
   const [topicProgress, setTopicProgress] = useState([])
@@ -73,6 +74,16 @@ export default function StudentDetail() {
     load()
   }
 
+  async function deleteStudent() {
+    if (!confirm(`Eliminare definitivamente ${student.name}? Verranno cancellati anche storico lezioni, risultati esercizi e punti. Non è recuperabile.`)) return
+    const { error } = await supabase.from('pl_students').delete().eq('id', id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    navigate('/')
+  }
+
   if (loading) return <p className="text-muted">Carico...</p>
   if (!student) return <p className="text-coral">Allievo non trovato.</p>
 
@@ -98,9 +109,14 @@ export default function StudentDetail() {
               </div>
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
-              <button onClick={() => setEditing(true)} className="text-sm text-violet font-bold hover:underline">
-                Modifica
-              </button>
+              <div className="flex gap-3">
+                <button onClick={() => setEditing(true)} className="text-sm text-violet font-bold hover:underline">
+                  Modifica
+                </button>
+                <button onClick={deleteStudent} className="text-sm text-coral font-bold hover:underline">
+                  Elimina
+                </button>
+              </div>
               <Link
                 to={`/studenti/${id}/sessione`}
                 className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 shadow-md shadow-violet/30"

@@ -4,6 +4,18 @@ import { supabase } from '../lib/supabase.js'
 import StreakBadge from '../components/StreakBadge.jsx'
 import { computeStreak } from '../lib/gamification.js'
 
+const NAMES_VISIBLE_KEY = 'kya_names_visible'
+
+function initials(name) {
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
 export default function Dashboard() {
   const [students, setStudents] = useState([])
   const [streaks, setStreaks] = useState({})
@@ -12,6 +24,13 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [form, setForm] = useState({ name: '', level: '', exam_date: '', notes: '' })
+  const [namesVisible, setNamesVisible] = useState(() => sessionStorage.getItem(NAMES_VISIBLE_KEY) === 'yes')
+
+  function toggleNames() {
+    const next = !namesVisible
+    setNamesVisible(next)
+    sessionStorage.setItem(NAMES_VISIBLE_KEY, next ? 'yes' : 'no')
+  }
 
   async function loadStudents() {
     setLoading(true)
@@ -72,18 +91,35 @@ export default function Dashboard() {
   }
 
   const borderColors = ['border-yellow', 'border-coral', 'border-green', 'border-blue']
+  const avatarColors = ['bg-yellow', 'bg-coral', 'bg-green', 'bg-blue', 'bg-violet']
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 pt-2">
+      <div className="flex items-center justify-between mb-6 pt-2 flex-wrap gap-3">
         <h1 className="font-display text-3xl text-ink">I tuoi allievi 👋</h1>
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 shadow-md shadow-violet/30"
-        >
-          {showForm ? 'Annulla' : '+ Nuovo allievo'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={toggleNames}
+            className={`text-sm px-4 py-2.5 rounded-pill font-bold ${
+              namesVisible ? 'bg-ink text-white' : 'bg-violet-soft text-violet'
+            }`}
+          >
+            {namesVisible ? '🔓 Nomi visibili' : '🔒 Nomi nascosti'}
+          </button>
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            className="bg-violet text-white text-sm px-5 py-2.5 rounded-pill hover:opacity-90 shadow-md shadow-violet/30"
+          >
+            {showForm ? 'Annulla' : '+ Nuovo allievo'}
+          </button>
+        </div>
       </div>
+
+      {!namesVisible && (
+        <p className="text-xs text-muted mb-4">
+          I nomi sono nascosti per privacy — mostra solo le iniziali. Tocca "Nomi nascosti" per rivelarli quando sei da sola.
+        </p>
+      )}
 
       {error && <p className="text-coral text-sm mb-4">Errore: {error}</p>}
 
@@ -97,7 +133,7 @@ export default function Dashboard() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white"
-                placeholder="es. Lavinia"
+                placeholder="Nome e cognome"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
@@ -106,7 +142,7 @@ export default function Dashboard() {
                 value={form.level}
                 onChange={(e) => setForm({ ...form, level: e.target.value })}
                 className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white"
-                placeholder="es. 4a superiore - esame riparazione"
+                placeholder="es. Adulto A1, 4a superiore, ecc."
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
@@ -151,17 +187,26 @@ export default function Dashboard() {
               <Link
                 key={s.id}
                 to={`/studenti/${s.id}`}
-                className={`card p-5 border-b-4 ${borderColors[i % borderColors.length]} hover:-translate-y-0.5 transition-transform block`}
+                className={`card p-5 border-b-4 ${borderColors[i % borderColors.length]} hover:-translate-y-0.5 transition-transform flex items-center gap-4`}
               >
-                <h2 className="font-display text-xl text-ink">{s.name}</h2>
-                {s.level && <p className="text-sm text-muted mt-1">{s.level}</p>}
-                {s.exam_date && (
-                  <p className={`text-xs font-data mt-1.5 font-bold ${urgent ? 'text-coral' : 'text-muted'}`}>
-                    {days >= 0 ? `ESAME TRA ${days} GIORNI ⏳` : 'DATA ESAME PASSATA'}
-                  </p>
-                )}
-                <div className="mt-3">
-                  <StreakBadge points={s.points || 0} streak={streaks[s.id] || 0} />
+                <div
+                  className={`w-12 h-12 rounded-full ${avatarColors[i % avatarColors.length]} text-white font-display text-lg flex items-center justify-center shrink-0`}
+                >
+                  {initials(s.name)}
+                </div>
+                <div className="min-w-0">
+                  <h2 className="font-display text-xl text-ink truncate">
+                    {namesVisible ? s.name : 'Allievo/a'}
+                  </h2>
+                  {namesVisible && s.level && <p className="text-sm text-muted mt-0.5 truncate">{s.level}</p>}
+                  {s.exam_date && (
+                    <p className={`text-xs font-data mt-1 font-bold ${urgent ? 'text-coral' : 'text-muted'}`}>
+                      {days >= 0 ? `ESAME TRA ${days} GIORNI ⏳` : 'DATA ESAME PASSATA'}
+                    </p>
+                  )}
+                  <div className="mt-2">
+                    <StreakBadge points={s.points || 0} streak={streaks[s.id] || 0} />
+                  </div>
                 </div>
               </Link>
             )
