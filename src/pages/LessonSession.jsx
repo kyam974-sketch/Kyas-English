@@ -3,6 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import ExerciseRunner from '../components/ExerciseRunner.jsx'
 import { computeStreak, computeTopicProgress, checkNewBadges } from '../lib/gamification.js'
+import { getActiveSession, setActiveSession, clearActiveSession } from '../lib/activeSession.js'
+
+const TYPE_LABELS = {
+  grammar: 'Grammar', reading: 'Reading', cloze: 'Cloze', vocab: 'Vocabulary',
+  listening: 'Listening 🎧', game: 'Game ⚡',
+}
 
 export default function LessonSession() {
   const { id, lessonId: lessonIdParam } = useParams()
@@ -21,6 +27,8 @@ export default function LessonSession() {
   const [finishing, setFinishing] = useState(false)
   const [existingSummary, setExistingSummary] = useState(null)
   const [existingPointsEarned, setExistingPointsEarned] = useState(0)
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [topicFilter, setTopicFilter] = useState('all')
 
   useEffect(() => {
     async function load() {
@@ -37,10 +45,39 @@ export default function LessonSession() {
           setExistingSummary(existingLesson.summary || null)
           setExistingPointsEarned(existingLesson.points_earned || 0)
         }
+        // Restore any exercises added from the Exercise Bank while browsing away
+        const active = getActiveSession()
+        if (active && active.lessonId === lessonIdParam) {
+          setSelectedIds(active.selectedIds || [])
+        } else if (s) {
+          setActiveSession({ studentId: id, studentName: s.name, lessonId: lessonIdParam, selectedIds: [] })
+        }
       }
     }
     load()
   }, [id, lessonIdParam])
+
+  // Keep the shared active-session record in sync so the Exercise Bank page can add to it
+  useEffect(() => {
+    if (!lessonId || !student) return
+    setActiveSession({ studentId: id, studentName: student.name, lessonId, selectedIds })
+  }, [selectedIds, lessonId, student, id])
+
+  // If we started this session in this tab (not via URL resume) but come back from Exercise Bank, pick up additions
+  useEffect(() => {
+    function onFocus() {
+      if (!lessonId) return
+      const active = getActiveSession()
+      if (active && active.lessonId === lessonId) {
+        setSelectedIds((prev) => {
+          const merged = Array.from(new Set([...prev, ...(active.selectedIds || [])]))
+          return merged
+        })
+      }
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [lessonId])
 
   async function startLesson(e) {
     e.preventDefault()
@@ -57,6 +94,7 @@ export default function LessonSession() {
     setSaving(false)
     if (error) { setError(error.message); return }
     setLessonId(data.id)
+    setActiveSession({ studentId: id, studentName: student?.name, lessonId: data.id, selectedIds: [] })
   }
 
   async function saveExerciseResult({ exercise_id, answers, score }) {
@@ -113,11 +151,20 @@ export default function LessonSession() {
 
     await supabase.from('pl_lessons').update({ summary, points_earned: totalPointsEarned }).eq('id', lessonId)
 
+    clearActiveSession()
     setSummaryData({ sessionPoints, streak, newBadges, summary })
     setFinishing(false)
   }
 
   if (!student) return <p className="text-muted">Loading...</p>
+
+  const topics_available = Array.from(new Set(allExercises.map((e) => e.topic_tag).filter(Boolean))).sort()
+  const pickable = allExercises.filter((ex) => {
+    if (selectedIds.includes(ex.id)) return false
+    if (typeFilter !== 'all' && ex.type !== typeFilter) return false
+    if (topicFilter !== 'all' && ex.topic_tag !== topicFilter) return false
+    return true
+  })
 
   return (
     <div>
@@ -188,19 +235,71 @@ export default function LessonSession() {
             {resuming && topics && (
               <p className="text-xs text-muted mt-1">Topics: {topics}</p>
             )}
+            <p className="text-xs text-muted mt-1">
+              Tip: you can also add exercises from the <Link to="/esercizi" className="text-violet font-bold hover:underline">Exercise bank</Link> while this session is open.
+            </p>
           </div>
 
-          {selectedIds.length === 0 ? (
-            <div>
-              <p className="text-sm text-muted mb-3">Select one or more exercises from the bank:</p>
-              {allExercises.length === 0 ? (
-                <p className="text-sm text-muted">
-                  No exercises in the bank yet.{' '}
-                  <Link to="/esercizi/nuovo" className="text-violet font-bold hover:underline">Create one</Link>.
-                </p>
+          {selectedIds.length > 0 && (
+            <div className="flex flex-col gap-6 mb-6">
+              {allExercises.filter((ex) => selectedIds.includes(ex.id)).map((ex) => (
+                <ExerciseRunner key={ex.id} exercise={ex} onSaveResult={saveExerciseResult} />
+              ))}
+            </div>
+          )}
+
+          <p className="text-sm text-muted mb-3">
+            {selectedIds.length > 0 ? 'Add another exercise:' : 'Select one or more exercises from the bank:'}
+          </p>
+
+          {allExercises.length === 0 ? (
+            <p className="text-sm text-muted">
+              No exercises in the bank yet.{' '}
+              <Link to="/esercizi/nuovo" className="text-violet font-bold hover:underline">Create one</Link>.
+            </p>
+          ) : (
+            <>
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {['all', 'grammar', 'reading', 'cloze', 'vocab', 'listening', 'game'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTypeFilter(t)}
+                    className={`text-xs px-3 py-1 rounded-pill font-data font-bold ${
+                      typeFilter === t ? 'bg-ink text-white' : 'bg-white text-muted hover:bg-violet-soft'
+                    }`}
+                  >
+                    {t === 'all' ? 'All types' : TYPE_LABELS[t]}
+                  </button>
+                ))}
+              </div>
+              {topics_available.length > 0 && (
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  <button
+                    onClick={() => setTopicFilter('all')}
+                    className={`text-xs px-3 py-1 rounded-pill font-data font-bold ${
+                      topicFilter === 'all' ? 'bg-violet text-white' : 'bg-white text-muted hover:bg-violet-soft'
+                    }`}
+                  >
+                    All topics
+                  </button>
+                  {topics_available.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTopicFilter(t)}
+                      className={`text-xs px-3 py-1 rounded-pill font-data font-bold ${
+                        topicFilter === t ? 'bg-violet text-white' : 'bg-white text-muted hover:bg-violet-soft'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {pickable.length === 0 ? (
+                <p className="text-sm text-muted mb-4">No exercises match this filter.</p>
               ) : (
-                <ul className="flex flex-col gap-2">
-                  {allExercises.map((ex) => (
+                <ul className="flex flex-col gap-2 mb-4">
+                  {pickable.map((ex) => (
                     <li key={ex.id} className="card p-3.5 flex items-center justify-between">
                       <div>
                         <p className="text-sm text-ink font-semibold">{ex.title}</p>
@@ -213,34 +312,17 @@ export default function LessonSession() {
                   ))}
                 </ul>
               )}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-6">
-              {allExercises.filter((ex) => selectedIds.includes(ex.id)).map((ex) => (
-                <ExerciseRunner key={ex.id} exercise={ex} onSaveResult={saveExerciseResult} />
-              ))}
-              <div className="flex gap-3 flex-wrap">
-                {allExercises.filter((ex) => !selectedIds.includes(ex.id)).length > 0 && (
-                  <select
-                    onChange={(e) => { if (e.target.value) setSelectedIds([...selectedIds, e.target.value]) }}
-                    defaultValue=""
-                    className="border-2 border-violet-soft rounded-xl px-3 py-2 bg-white text-sm"
-                  >
-                    <option value="">+ Add another exercise...</option>
-                    {allExercises.filter((ex) => !selectedIds.includes(ex.id)).map((ex) => (
-                      <option key={ex.id} value={ex.id}>{ex.title}</option>
-                    ))}
-                  </select>
-                )}
-                <button
-                  onClick={finishSession}
-                  disabled={finishing}
-                  className="bg-green text-white text-sm px-5 py-2.5 rounded-pill font-bold disabled:opacity-50"
-                >
-                  {finishing ? 'Finishing...' : 'End session →'}
-                </button>
-              </div>
-            </div>
+            </>
+          )}
+
+          {selectedIds.length > 0 && (
+            <button
+              onClick={finishSession}
+              disabled={finishing}
+              className="bg-green text-white text-sm px-5 py-2.5 rounded-pill font-bold disabled:opacity-50"
+            >
+              {finishing ? 'Finishing...' : 'End session →'}
+            </button>
           )}
         </div>
       )}

@@ -84,6 +84,22 @@ export default function StudentDetail() {
     navigate('/')
   }
 
+  async function deleteLesson(e, lesson) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm('Delete this session from the history? Its exercise results and any points earned will be removed too. This cannot be undone.')) return
+    const { error: e1 } = await supabase.from('pl_exercise_results').delete().eq('lesson_id', lesson.id)
+    const { error: e2 } = await supabase.from('pl_lessons').delete().eq('id', lesson.id)
+    if (e1 || e2) {
+      setError((e1 || e2).message)
+      return
+    }
+    if (lesson.points_earned) {
+      await supabase.from('pl_students').update({ points: Math.max(0, (student.points || 0) - lesson.points_earned) }).eq('id', id)
+    }
+    load()
+  }
+
   if (loading) return <p className="text-muted">Loading...</p>
   if (!student) return <p className="text-coral">Student not found.</p>
 
@@ -195,6 +211,21 @@ export default function StudentDetail() {
           <div className="card p-5 mb-7">
             <div className="font-data text-xs text-muted">{lastLessonWithSummary.lesson_date}</div>
             <p className="text-sm mt-2 leading-relaxed whitespace-pre-wrap">{lastLessonWithSummary.summary}</p>
+            <div className="flex gap-2.5 mt-4 flex-wrap">
+              <button
+                onClick={() => navigator.clipboard.writeText(lastLessonWithSummary.summary)}
+                className="bg-violet-soft text-violet text-xs px-4 py-2 rounded-pill font-bold"
+              >
+                Copy summary
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(lastLessonWithSummary.summary)}`}
+                target="_blank" rel="noreferrer"
+                className="bg-green-soft text-green text-xs px-4 py-2 rounded-pill font-bold"
+              >
+                Share on WhatsApp
+              </a>
+            </div>
           </div>
         </>
       )}
@@ -225,7 +256,15 @@ export default function StudentDetail() {
                 </div>
               )}
               {l.notes && <p className="text-sm text-ink mt-2">{l.notes}</p>}
-              <span className="text-xs text-violet font-bold mt-2 inline-block">Resume →</span>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-violet font-bold inline-block">Resume →</span>
+                <button
+                  onClick={(e) => deleteLesson(e, l)}
+                  className="text-xs text-coral font-bold hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
             </Link>
           ))}
         </ul>
