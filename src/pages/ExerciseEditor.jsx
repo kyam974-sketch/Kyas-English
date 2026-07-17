@@ -257,7 +257,7 @@ export default function ExerciseEditor() {
               <option value="reading">Reading comprehension</option>
               <option value="cloze">Cloze (word insertion)</option>
               <option value="listening">Listening (audio + questions)</option>
-              <option value="game">Game — Matching</option>
+              <option value="game">Game</option>
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
