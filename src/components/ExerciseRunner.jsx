@@ -87,6 +87,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
   const [saved, setSaved] = useState(false)
   const [placements, setPlacements] = useState({})
   const [heldItem, setHeldItem] = useState(null)
+  const [reorderBuilt, setReorderBuilt] = useState({})
 
   const { type, content } = exercise
 
@@ -112,8 +113,24 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
     } else if (type === 'cloze') {
       Object.entries(content.answers || {}).forEach(([num, word]) => { total += 1; if (normalize(answers[num]) === normalize(word)) correct += 1 })
     } else if (type === 'game') {
-      total = content.pairs.length
-      correct = content.pairs.filter((p) => placements[p.id] === p.id).length
+      const kind = content.kind || 'matching'
+      if (kind === 'quiz') {
+        total = content.questions.length
+        correct = content.questions.filter((q) => normalize(answers[q.id]) === normalize(q.answer)).length
+      } else if (kind === 'reorder') {
+        total = content.items.length
+        correct = content.items.filter((it) => {
+          const built = reorderBuilt[it.id] || []
+          if (built.length !== it.correct.length) return false
+          return built.every((wordIndex, i) => shuffledReorderWords[it.id][wordIndex] === it.correct[i])
+        }).length
+      } else if (kind === 'odd_one_out') {
+        total = content.rounds.length
+        correct = content.rounds.filter((r) => normalize(answers[`odd_${r.id}`]) === normalize(r.odd)).length
+      } else {
+        total = content.pairs.length
+        correct = content.pairs.filter((p) => placements[p.id] === p.id).length
+      }
     }
 
     setScore({ correct, total })
@@ -122,9 +139,16 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
   }
 
   async function save() {
+    let payload = answers
+    if (type === 'game') {
+      const kind = content.kind || 'matching'
+      if (kind === 'matching') payload = { placements }
+      else if (kind === 'reorder') payload = { reorderBuilt }
+      else payload = answers
+    }
     await onSaveResult({
       exercise_id: exercise.id,
-      answers: type === 'game' ? { placements } : answers,
+      answers: payload,
       score: score.total > 0 ? Math.round((score.correct / score.total) * 100) / 100 : null,
     })
     setSaved(true)
@@ -144,11 +168,30 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
     }
   }
 
+  function tapReorderBank(itemId, wordIndex) {
+    const built = reorderBuilt[itemId] || []
+    if (built.includes(wordIndex)) return
+    setReorderBuilt({ ...reorderBuilt, [itemId]: [...built, wordIndex] })
+  }
+  function tapReorderBuilt(itemId, position) {
+    const built = [...(reorderBuilt[itemId] || [])]
+    built.splice(position, 1)
+    setReorderBuilt({ ...reorderBuilt, [itemId]: built })
+  }
+
   const youtubeId = type === 'listening' ? extractYoutubeId(content.media_url) : null
   const shuffledPairs = useMemo(
-    () => (type === 'game' ? shuffle(content.pairs) : []),
+    () => (type === 'game' && (content.kind || 'matching') === 'matching' ? shuffle(content.pairs) : []),
     [exercise.id]
   )
+  const shuffledReorderWords = useMemo(() => {
+    if (type !== 'game' || content.kind !== 'reorder') return {}
+    const map = {}
+    content.items.forEach((it) => {
+      map[it.id] = shuffle(it.correct.map((w, i) => ({ id: i, w }))).map((x) => x.w)
+    })
+    return map
+  }, [exercise.id])
 
   return (
     <div className="card p-6">
@@ -217,7 +260,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
         </p>
       )}
 
-      {type === 'game' && (
+      {type === 'game' && (content.kind || 'matching') === 'matching' && (
         <div>
           <p className="text-xs text-muted mb-3">Tap a word on the right, then tap where it belongs on the left.</p>
           <div className="grid grid-cols-2 gap-4">
@@ -268,6 +311,114 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
                 ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {type === 'game' && content.kind === 'quiz' && (
+        <div className="flex flex-col gap-4">
+          {content.questions.map((q) => (
+            <div key={q.id} className="text-sm">
+              <p className="text-ink font-semibold mb-1.5">{q.text}</p>
+              <div className="flex flex-col gap-1">
+                {q.options.map((opt) => (
+                  <label key={opt} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={q.id}
+                      checked={answers[q.id] === opt}
+                      onChange={() => setAnswers({ ...answers, [q.id]: opt })}
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+              {checked && <Mark correct={normalize(answers[q.id]) === normalize(q.answer)} />}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {type === 'game' && content.kind === 'reorder' && (
+        <div className="flex flex-col gap-5">
+          {content.items.map((it) => {
+            const built = reorderBuilt[it.id] || []
+            const words = shuffledReorderWords[it.id] || []
+            const isCorrect = checked
+              ? built.length === it.correct.length && built.every((wi, i) => words[wi] === it.correct[i])
+              : null
+            return (
+              <div key={it.id}>
+                <div
+                  className={`min-h-[44px] rounded-xl border-2 border-dashed p-2.5 flex flex-wrap gap-1.5 mb-2 ${
+                    checked ? (isCorrect ? 'bg-green-soft border-green' : 'bg-coral-soft border-coral') : 'border-violet-soft'
+                  }`}
+                >
+                  {built.length === 0 && <span className="text-muted italic text-sm">Tap words below in the right order...</span>}
+                  {built.map((wi, pos) => (
+                    <button
+                      type="button"
+                      key={pos}
+                      onClick={() => tapReorderBuilt(it.id, pos)}
+                      className="bg-violet-soft text-violet text-sm px-2.5 py-1 rounded-lg font-bold"
+                    >
+                      {words[wi]}
+                    </button>
+                  ))}
+                  {checked && <Mark correct={isCorrect} />}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {words.map((w, wi) =>
+                    built.includes(wi) ? null : (
+                      <button
+                        type="button"
+                        key={wi}
+                        onClick={() => tapReorderBank(it.id, wi)}
+                        className="bg-white border-2 border-violet-soft text-sm px-2.5 py-1 rounded-lg"
+                      >
+                        {w}
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {type === 'game' && content.kind === 'odd_one_out' && (
+        <div className="flex flex-col gap-5">
+          {content.rounds.map((r) => (
+            <div key={r.id}>
+              <div className="grid grid-cols-2 gap-2">
+                {r.options.map((opt) => {
+                  const isSelected = answers[`odd_${r.id}`] === opt
+                  const isTheOdd = normalize(opt) === normalize(r.odd)
+                  return (
+                    <button
+                      type="button"
+                      key={opt}
+                      onClick={() => setAnswers({ ...answers, [`odd_${r.id}`]: opt })}
+                      className={`rounded-xl px-3.5 py-2.5 text-sm border-2 ${
+                        checked
+                          ? isTheOdd
+                            ? 'bg-green-soft border-green'
+                            : isSelected
+                            ? 'bg-coral-soft border-coral'
+                            : 'bg-white border-violet-soft opacity-60'
+                          : isSelected
+                          ? 'bg-violet-soft border-violet'
+                          : 'bg-white border-violet-soft'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+              {checked && <Mark correct={normalize(answers[`odd_${r.id}`]) === normalize(r.odd)} />}
+            </div>
+          ))}
         </div>
       )}
 
