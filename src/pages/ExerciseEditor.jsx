@@ -36,6 +36,12 @@ export default function ExerciseEditor() {
   ])
 
   const [pairs, setPairs] = useState([{ id: newId(), left: '', right: '' }])
+  const [gameKind, setGameKind] = useState('matching')
+  const [quizQuestions, setQuizQuestions] = useState([
+    { id: newId(), text: '', options: '', answer: '' },
+  ])
+  const [reorderItems, setReorderItems] = useState([{ id: newId(), sentence: '' }])
+  const [oddRounds, setOddRounds] = useState([{ id: newId(), options: '', odd: '' }])
 
   useEffect(() => {
     if (!editing) return
@@ -62,7 +68,17 @@ export default function ExerciseEditor() {
         setMediaUrl(c.media_url || '')
         setListeningQuestions((c.questions || []).map((q) => ({ ...q, options: (q.options || []).join(', ') })))
       } else if (data.type === 'game') {
-        setPairs(c.pairs && c.pairs.length ? c.pairs : [{ id: newId(), left: '', right: '' }])
+        const kind = c.kind || 'matching'
+        setGameKind(kind)
+        if (kind === 'quiz') {
+          setQuizQuestions((c.questions || []).map((q) => ({ ...q, options: (q.options || []).join(', ') })))
+        } else if (kind === 'reorder') {
+          setReorderItems((c.items || []).map((it) => ({ id: it.id, sentence: (it.correct || []).join(' ') })))
+        } else if (kind === 'odd_one_out') {
+          setOddRounds((c.rounds || []).map((r) => ({ id: r.id, options: (r.options || []).join(', '), odd: r.odd })))
+        } else {
+          setPairs(c.pairs && c.pairs.length ? c.pairs : [{ id: newId(), left: '', right: '' }])
+        }
       }
     }
     load()
@@ -112,7 +128,40 @@ export default function ExerciseEditor() {
       }
     }
     if (type === 'game') {
-      return { pairs: pairs.filter((p) => p.left.trim() && p.right.trim()) }
+      if (gameKind === 'quiz') {
+        return {
+          kind: 'quiz',
+          questions: quizQuestions
+            .filter((q) => q.text.trim())
+            .map((q) => ({
+              id: q.id,
+              text: q.text,
+              options: q.options.split(',').map((o) => o.trim()).filter(Boolean),
+              answer: q.answer,
+            })),
+        }
+      }
+      if (gameKind === 'reorder') {
+        return {
+          kind: 'reorder',
+          items: reorderItems
+            .filter((it) => it.sentence.trim())
+            .map((it) => ({ id: it.id, correct: it.sentence.trim().split(/\s+/) })),
+        }
+      }
+      if (gameKind === 'odd_one_out') {
+        return {
+          kind: 'odd_one_out',
+          rounds: oddRounds
+            .filter((r) => r.options.trim())
+            .map((r) => ({
+              id: r.id,
+              options: r.options.split(',').map((o) => o.trim()).filter(Boolean),
+              odd: r.odd.trim(),
+            })),
+        }
+      }
+      return { kind: 'matching', pairs: pairs.filter((p) => p.left.trim() && p.right.trim()) }
     }
     return {}
   }
@@ -286,18 +335,84 @@ export default function ExerciseEditor() {
         )}
 
         {type === 'game' && (
-          <div>
-            <p className="text-sm text-muted mb-2">Pairs to match (e.g. verb form ↔ definition)</p>
-            <div className="flex flex-col gap-2">
-              {pairs.map((p, i) => (
-                <div key={p.id} className="flex gap-2">
-                  <input value={p.left} onChange={(e) => { const next = [...pairs]; next[i].left = e.target.value; setPairs(next) }} placeholder="went" className={inputCls + ' flex-1'} />
-                  <input value={p.right} onChange={(e) => { const next = [...pairs]; next[i].right = e.target.value; setPairs(next) }} placeholder="past simple of go" className={inputCls + ' flex-1'} />
-                  <button type="button" onClick={() => setPairs(pairs.filter((x) => x.id !== p.id))} className="text-coral text-xs px-2">✕</button>
+          <div className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted">Game kind</span>
+              <select value={gameKind} onChange={(e) => setGameKind(e.target.value)} className={inputCls}>
+                <option value="matching">Matching — tap to pair up words</option>
+                <option value="quiz">Quiz — multiple choice</option>
+                <option value="reorder">Sentence reorder — tap words in order</option>
+                <option value="odd_one_out">Odd one out — spot the word that doesn't belong</option>
+              </select>
+            </label>
+
+            {gameKind === 'matching' && (
+              <div>
+                <p className="text-sm text-muted mb-2">Pairs to match (e.g. verb form ↔ definition)</p>
+                <div className="flex flex-col gap-2">
+                  {pairs.map((p, i) => (
+                    <div key={p.id} className="flex gap-2">
+                      <input value={p.left} onChange={(e) => { const next = [...pairs]; next[i].left = e.target.value; setPairs(next) }} placeholder="went" className={inputCls + ' flex-1'} />
+                      <input value={p.right} onChange={(e) => { const next = [...pairs]; next[i].right = e.target.value; setPairs(next) }} placeholder="past simple of go" className={inputCls + ' flex-1'} />
+                      <button type="button" onClick={() => setPairs(pairs.filter((x) => x.id !== p.id))} className="text-coral text-xs px-2">✕</button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <button type="button" onClick={() => setPairs([...pairs, { id: newId(), left: '', right: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add pair</button>
+                <button type="button" onClick={() => setPairs([...pairs, { id: newId(), left: '', right: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add pair</button>
+              </div>
+            )}
+
+            {gameKind === 'quiz' && (
+              <div>
+                <p className="text-sm text-muted mb-2">Multiple choice questions — no timer, answers revealed at the end</p>
+                <div className="flex flex-col gap-3">
+                  {quizQuestions.map((q, i) => (
+                    <div key={q.id} className="border-2 border-violet-soft rounded-xl p-3 flex flex-col gap-2">
+                      <input value={q.text} onChange={(e) => { const next = [...quizQuestions]; next[i].text = e.target.value; setQuizQuestions(next) }} placeholder="Question" className={inputCls} />
+                      <input value={q.options} onChange={(e) => { const next = [...quizQuestions]; next[i].options = e.target.value; setQuizQuestions(next) }} placeholder="Options separated by commas" className={inputCls} />
+                      <div className="flex gap-2">
+                        <input value={q.answer} onChange={(e) => { const next = [...quizQuestions]; next[i].answer = e.target.value; setQuizQuestions(next) }} placeholder="Correct answer (must match one option exactly)" className={inputCls + ' flex-1'} />
+                        <button type="button" onClick={() => setQuizQuestions(quizQuestions.filter((x) => x.id !== q.id))} className="text-coral text-xs px-2">✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setQuizQuestions([...quizQuestions, { id: newId(), text: '', options: '', answer: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add question</button>
+              </div>
+            )}
+
+            {gameKind === 'reorder' && (
+              <div>
+                <p className="text-sm text-muted mb-2">Write each sentence in the correct order — the app scrambles it for the student to rebuild</p>
+                <div className="flex flex-col gap-2">
+                  {reorderItems.map((it, i) => (
+                    <div key={it.id} className="flex gap-2">
+                      <input value={it.sentence} onChange={(e) => { const next = [...reorderItems]; next[i].sentence = e.target.value; setReorderItems(next) }} placeholder="If I had more time, I would travel more." className={inputCls + ' flex-1'} />
+                      <button type="button" onClick={() => setReorderItems(reorderItems.filter((x) => x.id !== it.id))} className="text-coral text-xs px-2">✕</button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setReorderItems([...reorderItems, { id: newId(), sentence: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add sentence</button>
+              </div>
+            )}
+
+            {gameKind === 'odd_one_out' && (
+              <div>
+                <p className="text-sm text-muted mb-2">One round = a set of words/phrases plus the one that doesn't belong</p>
+                <div className="flex flex-col gap-3">
+                  {oddRounds.map((r, i) => (
+                    <div key={r.id} className="border-2 border-violet-soft rounded-xl p-3 flex flex-col gap-2">
+                      <input value={r.options} onChange={(e) => { const next = [...oddRounds]; next[i].options = e.target.value; setOddRounds(next) }} placeholder="apple, banana, volleyball, orange" className={inputCls} />
+                      <div className="flex gap-2">
+                        <input value={r.odd} onChange={(e) => { const next = [...oddRounds]; next[i].odd = e.target.value; setOddRounds(next) }} placeholder="Which one is the odd one out? (must match exactly)" className={inputCls + ' flex-1'} />
+                        <button type="button" onClick={() => setOddRounds(oddRounds.filter((x) => x.id !== r.id))} className="text-coral text-xs px-2">✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setOddRounds([...oddRounds, { id: newId(), options: '', odd: '' }])} className="text-violet text-sm mt-2 font-bold hover:underline">+ Add round</button>
+              </div>
+            )}
           </div>
         )}
 
