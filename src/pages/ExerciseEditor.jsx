@@ -16,6 +16,7 @@ export default function ExerciseEditor() {
   const [type, setType] = useState('grammar')
   const [title, setTitle] = useState('')
   const [topicTag, setTopicTag] = useState('')
+  const [sourceClip, setSourceClip] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -54,6 +55,7 @@ export default function ExerciseEditor() {
       setType(data.type)
       setTitle(data.title)
       setTopicTag(data.topic_tag || '')
+      setSourceClip(data.source_clip || '')
       const c = data.content || {}
       if (data.type === 'grammar' || data.type === 'vocab') {
         setItems(c.items && c.items.length ? c.items : [{ id: newId(), text: '', answer: '' }])
@@ -174,6 +176,7 @@ export default function ExerciseEditor() {
       type,
       title: title.trim(),
       topic_tag: topicTag.trim() || null,
+      source_clip: sourceClip.trim() || null,
       content: buildContent(),
     }
     const { error } = editing
@@ -267,6 +270,10 @@ export default function ExerciseEditor() {
           <label className="flex flex-col gap-1 text-sm sm:col-span-2">
             <span className="text-muted">Topic (used for filtering and progress tracking)</span>
             <input value={topicTag} onChange={(e) => setTopicTag(e.target.value)} className={inputCls} placeholder="e.g. conditional-1, for-since, family" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+            <span className="text-muted">Source clip / series (optional)</span>
+            <input value={sourceClip} onChange={(e) => setSourceClip(e.target.value)} className={inputCls} placeholder="e.g. The Vampire Diaries — Pilot" />
           </label>
         </div>
 

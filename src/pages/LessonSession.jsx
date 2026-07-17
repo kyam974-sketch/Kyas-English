@@ -29,6 +29,7 @@ export default function LessonSession() {
   const [existingPointsEarned, setExistingPointsEarned] = useState(0)
   const [typeFilter, setTypeFilter] = useState('all')
   const [topicFilter, setTopicFilter] = useState('all')
+  const [seriesFilter, setSeriesFilter] = useState('all')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -160,10 +161,12 @@ export default function LessonSession() {
   if (!student) return <p className="text-muted">Loading...</p>
 
   const topics_available = Array.from(new Set(allExercises.map((e) => e.topic_tag).filter(Boolean))).sort()
+  const series_available = Array.from(new Set(allExercises.map((e) => e.source_clip).filter(Boolean))).sort()
   const pickable = allExercises.filter((ex) => {
     if (selectedIds.includes(ex.id)) return false
     if (typeFilter !== 'all' && ex.type !== typeFilter) return false
     if (topicFilter !== 'all' && ex.topic_tag !== topicFilter) return false
+    if (seriesFilter !== 'all' && ex.source_clip !== seriesFilter) return false
     if (search.trim() && !ex.title.toLowerCase().includes(search.trim().toLowerCase())) return false
     return true
   })
@@ -303,6 +306,29 @@ export default function LessonSession() {
                   ))}
                 </div>
               )}
+              {series_available.length > 0 && (
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  <button
+                    onClick={() => setSeriesFilter('all')}
+                    className={`text-xs px-3 py-1 rounded-pill font-data font-bold ${
+                      seriesFilter === 'all' ? 'bg-ink text-white' : 'bg-white text-muted hover:bg-violet-soft'
+                    }`}
+                  >
+                    🎬 All series/clips
+                  </button>
+                  {series_available.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSeriesFilter(s)}
+                      className={`text-xs px-3 py-1 rounded-pill font-data font-bold ${
+                        seriesFilter === s ? 'bg-ink text-white' : 'bg-white text-muted hover:bg-violet-soft'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
               {pickable.length === 0 ? (
                 <p className="text-sm text-muted mb-4">No exercises match this filter.</p>
               ) : (
@@ -311,7 +337,7 @@ export default function LessonSession() {
                     <li key={ex.id} className="card p-3.5 flex items-center justify-between">
                       <div>
                         <p className="text-sm text-ink font-semibold">{ex.title}</p>
-                        <p className="text-xs text-muted font-data">{ex.type}{ex.topic_tag ? ` · ${ex.topic_tag}` : ''}</p>
+                        <p className="text-xs text-muted font-data">{ex.type}{ex.topic_tag ? ` · ${ex.topic_tag}` : ''}{ex.source_clip ? ` · 🎬 ${ex.source_clip}` : ''}</p>
                       </div>
                       <button onClick={() => setSelectedIds([...selectedIds, ex.id])} className="text-sm text-violet font-bold hover:underline">
                         Add

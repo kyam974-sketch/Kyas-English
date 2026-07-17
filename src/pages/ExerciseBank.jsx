@@ -13,6 +13,7 @@ export default function ExerciseBank() {
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('all')
   const [topicFilter, setTopicFilter] = useState('all')
+  const [seriesFilter, setSeriesFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [error, setError] = useState(null)
   const [activeSession, setActiveSessionState] = useState(getActiveSession())
@@ -44,9 +45,11 @@ export default function ExerciseBank() {
   }
 
   const topics_available = Array.from(new Set(exercises.map((e) => e.topic_tag).filter(Boolean))).sort()
+  const series_available = Array.from(new Set(exercises.map((e) => e.source_clip).filter(Boolean))).sort()
   const filtered = exercises.filter((e) => {
     if (typeFilter !== 'all' && e.type !== typeFilter) return false
     if (topicFilter !== 'all' && e.topic_tag !== topicFilter) return false
+    if (seriesFilter !== 'all' && e.source_clip !== seriesFilter) return false
     if (search.trim() && !e.title.toLowerCase().includes(search.trim().toLowerCase())) return false
     return true
   })
@@ -96,7 +99,7 @@ export default function ExerciseBank() {
       </div>
 
       {topics_available.length > 0 && (
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="flex gap-2 mb-3 flex-wrap">
           <button
             onClick={() => setTopicFilter('all')}
             className={`text-xs px-3.5 py-1.5 rounded-pill font-data font-bold ${
@@ -119,6 +122,30 @@ export default function ExerciseBank() {
         </div>
       )}
 
+      {series_available.length > 0 && (
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <button
+            onClick={() => setSeriesFilter('all')}
+            className={`text-xs px-3.5 py-1.5 rounded-pill font-data font-bold ${
+              seriesFilter === 'all' ? 'bg-ink text-white' : 'bg-white text-muted hover:bg-violet-soft'
+            }`}
+          >
+            🎬 All series/clips
+          </button>
+          {series_available.map((s) => (
+            <button
+              key={s}
+              onClick={() => setSeriesFilter(s)}
+              className={`text-xs px-3.5 py-1.5 rounded-pill font-data font-bold ${
+                seriesFilter === s ? 'bg-ink text-white' : 'bg-white text-muted hover:bg-violet-soft'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
       {error && <p className="text-coral text-sm mb-3">Error: {error}</p>}
 
       {loading ? (
@@ -131,9 +158,10 @@ export default function ExerciseBank() {
             <li key={ex.id} className="card p-4 flex items-center justify-between gap-4">
               <div>
                 <p className="font-display text-lg text-ink">{ex.title}</p>
-                <div className="flex gap-2 mt-1 items-center">
+                <div className="flex gap-2 mt-1 items-center flex-wrap">
                   <span className="text-xs font-data bg-violet-soft text-violet px-2.5 py-0.5 rounded-pill font-bold">{TYPE_LABELS[ex.type]}</span>
                   {ex.topic_tag && <span className="text-xs text-muted">{ex.topic_tag}</span>}
+                  {ex.source_clip && <span className="text-xs text-muted">🎬 {ex.source_clip}</span>}
                 </div>
               </div>
               <div className="flex gap-3 shrink-0 text-sm items-center">
