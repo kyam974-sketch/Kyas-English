@@ -13,6 +13,7 @@ export default function ExerciseBank() {
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('all')
   const [topicFilter, setTopicFilter] = useState('all')
+  const [search, setSearch] = useState('')
   const [error, setError] = useState(null)
   const [activeSession, setActiveSessionState] = useState(getActiveSession())
   const [justAdded, setJustAdded] = useState(null)
@@ -46,6 +47,7 @@ export default function ExerciseBank() {
   const filtered = exercises.filter((e) => {
     if (typeFilter !== 'all' && e.type !== typeFilter) return false
     if (topicFilter !== 'all' && e.topic_tag !== topicFilter) return false
+    if (search.trim() && !e.title.toLowerCase().includes(search.trim().toLowerCase())) return false
     return true
   })
 
@@ -71,6 +73,13 @@ export default function ExerciseBank() {
           </Link>
         </div>
       )}
+
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by title..."
+        className="w-full border-2 border-violet-soft rounded-xl px-4 py-2.5 bg-white text-sm mb-4"
+      />
 
       <div className="flex gap-2 mb-2 flex-wrap">
         {['all', 'grammar', 'reading', 'cloze', 'vocab', 'listening', 'game'].map((t) => (

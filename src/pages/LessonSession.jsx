@@ -29,6 +29,7 @@ export default function LessonSession() {
   const [existingPointsEarned, setExistingPointsEarned] = useState(0)
   const [typeFilter, setTypeFilter] = useState('all')
   const [topicFilter, setTopicFilter] = useState('all')
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -163,6 +164,7 @@ export default function LessonSession() {
     if (selectedIds.includes(ex.id)) return false
     if (typeFilter !== 'all' && ex.type !== typeFilter) return false
     if (topicFilter !== 'all' && ex.topic_tag !== topicFilter) return false
+    if (search.trim() && !ex.title.toLowerCase().includes(search.trim().toLowerCase())) return false
     return true
   })
 
@@ -259,6 +261,12 @@ export default function LessonSession() {
             </p>
           ) : (
             <>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by title..."
+                className="w-full border-2 border-violet-soft rounded-xl px-4 py-2.5 bg-white text-sm mb-3"
+              />
               <div className="flex gap-2 mb-2 flex-wrap">
                 {['all', 'grammar', 'reading', 'cloze', 'vocab', 'listening', 'game'].map((t) => (
                   <button
