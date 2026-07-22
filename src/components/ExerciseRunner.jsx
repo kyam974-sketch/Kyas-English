@@ -18,6 +18,15 @@ function normalize(s) {
   return (s || '').trim().toLowerCase()
 }
 
+// Accepts multiple correct answers separated by "|", and allows a loose
+// substring match in either direction so close paraphrases aren't marked wrong.
+function isCloseMatch(user, correctAnswer) {
+  const u = normalize(user)
+  if (!u) return false
+  const variants = (correctAnswer || '').split('|').map((v) => normalize(v)).filter(Boolean)
+  return variants.some((c) => u === c || (c.length > 3 && (u.includes(c) || c.includes(u))))
+}
+
 function splitAnswerParts(answer, blanksCount) {
   const parts = (answer || '').split('/').map((a) => a.trim())
   return parts.length === blanksCount ? parts : null
@@ -84,6 +93,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
   const [answers, setAnswers] = useState({})
   const [checked, setChecked] = useState(false)
   const [score, setScore] = useState({ correct: 0, total: 0 })
+  const [estimatedLevel, setEstimatedLevel] = useState(null)
   const [saved, setSaved] = useState(false)
   const [placements, setPlacements] = useState({})
   const [heldItem, setHeldItem] = useState(null)
@@ -94,29 +104,49 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
   function check() {
     let correct = 0
     let total = 0
+    setEstimatedLevel(null)
 
     if (type === 'grammar' || type === 'vocab') {
+      const levelTally = {}
       content.items.forEach((it) => {
         total += 1
         const blanksCount = (it.text.match(/___/g) || []).length
         const expectedParts = splitAnswerParts(it.answer, blanksCount)
+        let isCorrect
         if (expectedParts) {
           const userValues = Array.from({ length: blanksCount }, (_, i) => answers[`${it.id}__${i}`] || '')
-          if (expectedParts.every((exp, i) => normalize(userValues[i]) === normalize(exp))) correct += 1
+          isCorrect = expectedParts.every((exp, i) => normalize(userValues[i]) === normalize(exp))
         } else {
           const userValues = Array.from({ length: blanksCount }, (_, i) => answers[`${it.id}__${i}`] || '')
-          if (normalize(userValues.join(' / ')) === normalize(it.answer)) correct += 1
+          isCorrect = normalize(userValues.join(' / ')) === normalize(it.answer)
+        }
+        if (isCorrect) correct += 1
+        if (it.level) {
+          if (!levelTally[it.level]) levelTally[it.level] = { correct: 0, total: 0 }
+          levelTally[it.level].total += 1
+          if (isCorrect) levelTally[it.level].correct += 1
         }
       })
+      if (Object.keys(levelTally).length > 0) {
+        const order = ['A1', 'A2', 'B1', 'B2', 'C1']
+        let estimated = 'Below A1'
+        for (const lvl of order) {
+          const t = levelTally[lvl]
+          if (!t) continue
+          if (t.correct / t.total >= 0.6) estimated = lvl
+          else break
+        }
+        setEstimatedLevel(estimated)
+      }
     } else if (type === 'reading' || type === 'listening') {
-      content.questions.forEach((q) => { total += 1; if (normalize(answers[q.id]) === normalize(q.answer)) correct += 1 })
+      content.questions.forEach((q) => { total += 1; if (isCloseMatch(answers[q.id], q.answer)) correct += 1 })
     } else if (type === 'cloze') {
       Object.entries(content.answers || {}).forEach(([num, word]) => { total += 1; if (normalize(answers[num]) === normalize(word)) correct += 1 })
     } else if (type === 'game') {
       const kind = content.kind || 'matching'
       if (kind === 'quiz') {
         total = content.questions.length
-        correct = content.questions.filter((q) => normalize(answers[q.id]) === normalize(q.answer)).length
+        correct = content.questions.filter((q) => isCloseMatch(answers[q.id], q.answer)).length
       } else if (kind === 'reorder') {
         total = content.items.length
         correct = content.items.filter((it) => {
@@ -332,7 +362,7 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
                   </label>
                 ))}
               </div>
-              {checked && <Mark correct={normalize(answers[q.id]) === normalize(q.answer)} />}
+              {checked && <Mark correct={isCloseMatch(answers[q.id], q.answer)} />}
             </div>
           ))}
         </div>
@@ -427,6 +457,11 @@ export default function ExerciseRunner({ exercise, onSaveResult }) {
           Check
         </button>
         {checked && <span className="font-data text-sm text-ink font-bold">{score.correct} / {score.total}</span>}
+        {checked && estimatedLevel && (
+          <span className="font-data text-sm bg-violet text-white px-3 py-1 rounded-pill font-bold">
+            📊 Estimated level: {estimatedLevel}
+          </span>
+        )}
         {checked && onSaveResult && (
           <button onClick={save} disabled={saved} className="text-sm text-violet font-bold hover:underline disabled:text-green disabled:no-underline">
             {saved ? 'Saved ✓' : 'Save result'}
@@ -458,7 +493,7 @@ function QuestionBlock({ q, answers, setAnswers, checked }) {
           className="border-b-2 border-violet-soft bg-transparent px-1 w-full focus:border-violet outline-none"
         />
       )}
-      {checked && <Mark correct={normalize(answers[q.id]) === normalize(q.answer)} />}
+      {checked && <Mark correct={isCloseMatch(answers[q.id], q.answer)} />}
     </div>
   )
 }
