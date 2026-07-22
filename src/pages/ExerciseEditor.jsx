@@ -225,7 +225,7 @@ export default function ExerciseEditor() {
               <input
                 value={q.answer}
                 onChange={(e) => { const next = [...list]; next[i].answer = e.target.value; setList(next) }}
-                placeholder="Correct answer"
+                placeholder="Correct answer (for open answers, separate accepted variants with |)"
                 className={inputCls}
               />
             </div>
@@ -280,13 +280,21 @@ export default function ExerciseEditor() {
         {(type === 'grammar' || type === 'vocab') && (
           <div>
             <p className="text-sm text-muted mb-2">
-              Write the sentence using <code className="bg-violet-soft px-1 rounded">___</code> for each blank (you can have more than one per sentence). If there's more than one blank, write the answers separated by <code className="bg-violet-soft px-1 rounded">/</code> in the same order (e.g. "had / would travel").
+              Write the sentence using <code className="bg-violet-soft px-1 rounded">___</code> for each blank (you can have more than one per sentence). If there's more than one blank, write the answers separated by <code className="bg-violet-soft px-1 rounded">/</code> in the same order (e.g. "had / would travel"). The <strong>Level</strong> field is optional — only set it if you want this exercise to estimate a CEFR level from the results (e.g. a placement test).
             </p>
             <div className="flex flex-col gap-2">
               {items.map((it, i) => (
                 <div key={it.id} className="flex gap-2 items-start">
                   <input value={it.text} onChange={(e) => { const next = [...items]; next[i].text = e.target.value; setItems(next) }} placeholder="I ___ (go) to the cinema last Saturday." className={inputCls + ' flex-1'} />
                   <input value={it.answer} onChange={(e) => { const next = [...items]; next[i].answer = e.target.value; setItems(next) }} placeholder="went" className={inputCls + ' w-32'} />
+                  <select value={it.level || ''} onChange={(e) => { const next = [...items]; next[i].level = e.target.value || undefined; setItems(next) }} className={inputCls + ' w-24'}>
+                    <option value="">Level</option>
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C1">C1</option>
+                  </select>
                   <button type="button" onClick={() => setItems(items.filter((x) => x.id !== it.id))} className="text-coral text-xs px-2 py-2">✕</button>
                 </div>
               ))}
